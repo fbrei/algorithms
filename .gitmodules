@@ -1,0 +1,3 @@
+[submodule "lib/dtypes"]
+	path = lib/dtypes
+	url = https://github.com/fbrei/dtypes.git
