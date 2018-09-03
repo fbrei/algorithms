@@ -1,12 +1,14 @@
 #include "astar.h"
 
-#include <stdio.h>
+AStarPathNode* astar(Graph *g, void *start, void *goal, double (*heuristic)(void*,void*),
+    unsigned long (*hash)(void*)) {
 
-
-AStarPathNode* astar(Graph *g, void *start, void *goal, double (*heuristic)(void*,void*), int (*equals)(void*,void*) ) {
-  printf("Hello, this is the A* algorithm!\n");
+  if(hash==NULL) hash=null_hash;
+  if(heuristic == NULL) heuristic = null_heuristic;
 
   PrQueue *frontier = prqueue_init(_astar_compare_to);
+  frontier->equals = _astar_equals;
+  HSet *explored = hset_init(hash, _astar_equals);
 
   AStarPathNode *astar_start = malloc(sizeof(AStarPathNode));
 
@@ -21,10 +23,10 @@ AStarPathNode* astar(Graph *g, void *start, void *goal, double (*heuristic)(void
 
   while(1) {
     current = prqueue_pop(frontier);
-    if(equals(  ((AStarPathNode*) current)->data, goal ) ) {
-      prqueue_destroy(frontier, free);
-      return current;
+    if(current == NULL || ((AStarPathNode*) current)->data == goal ) {
+      break;
     }
+    hset_add(explored, current);
 
     DArray *neighbors = graph_get_neighbors(g, ((AStarPathNode*) current)->data );
     if(neighbors != NULL) {
@@ -32,19 +34,46 @@ AStarPathNode* astar(Graph *g, void *start, void *goal, double (*heuristic)(void
       void *new_neighbor = NULL;
       while((new_neighbor = darray_iterate(neighbors, new_neighbor)) != NULL) {
         AStarPathNode *tmp = malloc(sizeof(AStarPathNode));
+
         tmp->data = new_neighbor;
         tmp->total_dist = ((AStarPathNode*) current)->total_dist + *graph_get_edge_weight(g, ((AStarPathNode*) current)->data, new_neighbor);
         tmp->estimate = heuristic(tmp, goal);
         tmp->parent = current;
 
-        prqueue_add(frontier, tmp);
+        if(hset_contains(explored, tmp) != -1) {
+          free(tmp);
+          continue;
+        } else {
+          AStarPathNode *old_neighbor = prqueue_get(frontier, tmp);
+          if(old_neighbor == NULL) {
+            prqueue_add(frontier, tmp);
+          } else if(old_neighbor->total_dist + old_neighbor->estimate > tmp->total_dist + tmp->estimate) {
+            prqueue_replace(frontier, old_neighbor, tmp);
+          }
+        }
       }
+      darray_destroy(neighbors, NULL);
     }
 
-    darray_destroy(neighbors, NULL);
   }
 
+  void *tmp = current;
+  while(tmp != NULL) {
+    hset_remove(explored, tmp);
+    tmp = ((AStarPathNode*) tmp)->parent;
+  }
+
+  hset_destroy(explored, NULL);
+  prqueue_destroy(frontier, NULL);
   return current;
+}
+
+void astar_free_path(AStarPathNode *a) {
+  while(a != NULL) {
+    AStarPathNode *tmp = a;
+    a = a->parent;
+    free(tmp);
+  }
 }
 
 int _astar_compare_to(void *first, void *second) {
@@ -63,3 +92,13 @@ int _astar_compare_to(void *first, void *second) {
   }
 
 }
+
+unsigned int _astar_equals(void *first, void* second) {
+  AStarPathNode *m1 = (AStarPathNode*) first;
+  AStarPathNode *m2 = (AStarPathNode*) second;
+
+  return (m1->data == m2->data) ? 1 : 0;
+}
+
+unsigned long null_hash(void *n) { return 0l; }
+double null_heuristic(void *n, void *m) { return 0.0; }
