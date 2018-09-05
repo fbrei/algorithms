@@ -7,25 +7,25 @@
 
 int main(int argc, const char** argv) {
 
-  double point_x = 9;
-  double point_y = 20;
+  double point_x = 2;
+  double point_y = 6;
 
   double circ_x = 9;
   double circ_y = 6;
 
   double circ_r = 3;
 
-  DArray *out = tangent_circle_point(point_x, point_y, circ_x, circ_y, circ_r);
+  DArray *out = tangent_circle_point_intersects(point_x, point_y, circ_x, circ_y, circ_r);
 
-  LinearFunction *tmp = NULL;
+  MapPoint *tmp = NULL;
 
   printf("Found the following tangents:\n");
   while(1) {
-    tmp = (LinearFunction*) darray_iterate(out, tmp);
+    tmp = (MapPoint*) darray_iterate(out, tmp);
     if(tmp == NULL) {
       break;
     }
-    printf("y = %5.2lfx + %5.2lf\n", tmp->m, tmp->n);
+    printf("Point: (%5.2lf, %5.2lf)\n", tmp->x, tmp->y);
   }
 
   darray_destroy(out, free);

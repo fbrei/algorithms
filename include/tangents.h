@@ -30,6 +30,17 @@ typedef struct _LinearFunction {
 } LinearFunction;
 
 
+/** \brief Describes a point in a 2D-plant
+ *
+ *  Used to hold and group coordinates.
+ */
+typedef struct _MapPoint {
+  double x;   /**< The x-coordinate */
+  double y;   /**< The y-coordinate */
+} MapPoint;
+
+
+
 /**
  * \brief Calculates the tangents on a circle given an external point
  *
@@ -46,6 +57,24 @@ typedef struct _LinearFunction {
  * \return A DArray containing the results
  */
 DArray* tangent_circle_point(double point_x, double point_y, double circ_x, double circ_y, double circ_r);
+
+
+
+/**
+ * \brief Calculates the points where the tangent would touch the circle
+ *
+ * Use this method if all you need are the points where the tangent would
+ * touch the circle (for exampling if you want to calculate a visibility
+ * graph)
+ *
+ * \param point_x x-coordinate of the point
+ * \param point_y y-coordinate of the point
+ * \param circ_x x-coordinate of the circle
+ * \param circ_y y-coordinate of the circle
+ * \param circ_r Radius of the circle
+ * \return A DArray containing the points of intersection
+ */
+DArray* tangent_circle_point_intersects(double point_x, double point_y, double circ_x, double circ_y, double circ_r);
 
 #endif /* end of include guard: TANGENTS_H_UJO8EG29 */
 
