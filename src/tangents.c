@@ -139,3 +139,33 @@ DArray* tangent_circle_point_intersects(double point_x, double point_y, double c
   
   }
 }
+
+DArray* tangent_circle_outer_intersects(double source_x, double source_y, double source_r,
+    double target_x, double target_y, double target_r) {
+
+  if(source_r == target_r) {
+  
+    if(source_x != target_x) {
+      double m = (target_y - source_y) / (target_x - source_x);
+
+      double phi = atan(m);
+
+      DArray *result = darray_init();
+
+      MapPoint *p1 = malloc(sizeof(MapPoint));
+      p1->x = -target_r * sin(phi) + target_x;
+      p1->y = target_r * cos(phi) + target_y;
+
+      MapPoint *p2 = malloc(sizeof(MapPoint));
+      p2->x = target_r * sin(phi) + target_x;
+      p2->y = -target_r * cos(phi) + target_y;
+
+      darray_set(result,p1,0);
+      darray_set(result,p2,1);
+
+      return result;
+    }
+  
+  }
+  return NULL;
+}
