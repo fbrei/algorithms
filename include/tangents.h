@@ -98,5 +98,24 @@ DArray* tangent_circle_point_intersects(double point_x, double point_y,
 DArray* tangent_circle_outer_intersects(double source_x, double source_y, double source_r,
     double target_x, double target_y, double target_r);
 
+/**
+ * \brief Calculates the intersection points of the outer
+ * tangents between two circles.
+ *
+ * Given two descriptions of circles, this function returns the points
+ * where the outer tangent originating from the source touches the
+ * target circle.
+ * 
+ * \param source_x x-coordinate of source circle
+ * \param source_y x-coordinate of source circle
+ * \param source_r Radius of source circle
+ * \param target_x x-coordinate of target circle
+ * \param target_y x-coordinate of target circle
+ * \param target_r Radius of target circle
+ * \return A DArray containing the points of intersection
+ */
+DArray* tangent_circle_inner_intersects(double source_x, double source_y, double source_r,
+    double target_x, double target_y, double target_r);
+
 #endif /* end of include guard: TANGENTS_H_UJO8EG29 */
 

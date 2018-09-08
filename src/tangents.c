@@ -1,5 +1,7 @@
 #include "tangents.h"
 
+#include <stdio.h>
+
 #include <math.h>
 
 DArray* tangent_circle_point(double point_x, double point_y, double circ_x, double circ_y, double circ_r) {
@@ -145,27 +147,106 @@ DArray* tangent_circle_outer_intersects(double source_x, double source_y, double
 
   if(source_r == target_r) {
   
-    if(source_x != target_x) {
-      double m = (target_y - source_y) / (target_x - source_x);
+    DArray *result = darray_init();
+    MapPoint *p1 = malloc(sizeof(MapPoint));
+    MapPoint *p2 = malloc(sizeof(MapPoint));
 
+    if(source_x != target_x) {
+
+      double m = (target_y - source_y) / (target_x - source_x);
       double phi = atan(m);
 
-      DArray *result = darray_init();
-
-      MapPoint *p1 = malloc(sizeof(MapPoint));
       p1->x = -target_r * sin(phi) + target_x;
       p1->y = target_r * cos(phi) + target_y;
 
-      MapPoint *p2 = malloc(sizeof(MapPoint));
       p2->x = target_r * sin(phi) + target_x;
       p2->y = -target_r * cos(phi) + target_y;
 
-      darray_set(result,p1,0);
-      darray_set(result,p2,1);
+    } else {
 
-      return result;
+      p1->x = target_x - target_r;
+      p1->y = target_y;
+
+      p2->x = target_x + target_r;
+      p2->y = target_y;
+      
     }
+
+    darray_set(result,p1,0);
+    darray_set(result,p2,1);
+
+    return result;
   
   }
+  return NULL;
+}
+
+DArray* tangent_circle_inner_intersects(double source_x, double source_y, double source_r,
+    double target_x, double target_y, double target_r) {
+
+  if(source_r == target_r) {
+
+    DArray *result = darray_init();
+    MapPoint *p1 = malloc(sizeof(MapPoint));
+    MapPoint *p2 = malloc(sizeof(MapPoint));
+
+
+    double center_x = (source_x + target_x) / 2.0;
+    double center_y = (source_y + target_y) / 2.0;
+
+    double circ_x = (center_x + target_x) / 2.0;
+    double circ_y = (center_y + target_y) / 2.0;
+
+    double circ_r = sqrt((circ_x - target_x) * (circ_x - target_x) + (circ_y - target_y) * (circ_y - target_y));
+
+    double a = (target_x * target_x - circ_x * circ_x);
+    a += (target_y * target_y - circ_y * circ_y);
+    a += (circ_r * circ_r  - target_r * target_r);
+
+    if(source_x != target_x) {
+      
+      double m = (target_y - circ_y) / (circ_x - target_x);
+      double n = -a / (2.0 * (circ_x - target_x));
+
+      double div = (m*m + 1);
+
+      double p = 2.0 * (m*n - m*target_x - target_y);
+      double q = n*n - 2.0 * n * target_x + target_x * target_x + target_y * target_y - target_r * target_r;
+
+      p /= div;
+      q /= div;
+
+      double sqrt_q = sqrt((p*p) / 4 - q);
+      double y1 = -p / 2.0 + sqrt_q, x1 = m * y1 + n;
+      double y2 = -p / 2.0 - sqrt_q, x2 = m * y2 + n;
+
+      p1->x = x1;
+      p1->y = y1;
+      p2->x = x2;
+      p2->y = y2;
+
+    } else {
+      
+      double y = a / (2.0 * (target_y - circ_y));
+      double p = -2.0 * target_x;
+      double q = target_x * target_x + (y - target_y) * (y - target_y) - target_r * target_r;
+
+      double sqrt_q = sqrt((p*p) / 4 - q);
+      double x1 = -p / 2.0 + sqrt_q, y1 = y;
+      double x2 = -p / 2.0 - sqrt_q, y2 = y;
+
+      p1->x = x1;
+      p1->y = y1;
+      p2->x = x2;
+      p2->y = y2;
+
+    }
+
+    darray_set(result,p1,0);
+    darray_set(result,p2,1);
+
+    return result;
+  }
+
   return NULL;
 }
