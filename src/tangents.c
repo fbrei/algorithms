@@ -276,3 +276,28 @@ DArray* tangent_circle_inner_intersects(double source_x, double source_y, double
 
   return NULL;
 }
+
+unsigned short tangent_is_blocked(MapPoint *p1, MapPoint *p2, DArray *obstacles) {
+
+  void *tmp = NULL;
+
+  while((tmp = darray_iterate(obstacles, tmp)) != NULL) {
+    CircularObstacle *co = (CircularObstacle*) tmp;
+
+    double m = (p1->y - p2->y) / (p1->x - p2->x);
+    double n = -p1->x * m + p1->y;
+
+    double x = co->position.x;
+    double y = co->position.y;
+    double r = co->radius;
+
+    double p = (2.0 * (m*n - x - m * y)) / (m * m + 1);
+    double q = (n*n + x * x + y * y - 2 * n * y - r * r) / (m * m + 1);
+
+    if( (p*p)/4 > q ) {
+      return 1;
+    }
+  }
+
+  return 0;
+}

@@ -17,6 +17,10 @@ void print_results(DArray *out) {
   }
 }
 
+void print_point(MapPoint m) {
+  printf("(%g,%g)", m.x, m.y);
+}
+
 void example1() {
 
   printf("Tangent circle point\n");
@@ -73,10 +77,62 @@ void example2() {
   }
 }
 
+void example3() {
+
+  printf("Filtered tangents between two circles\n");
+  printf("=====================================\n");
+
+  double m_x = 10.0, m_y = 3.0, m_r = 2.0;
+  double n_x = -3.0, n_y = -5.0, n_r = 2.0;
+
+  double o_x = 3.0, o_y = 2.0, o_r = 2.0;
+
+  CircularObstacle co = { .radius = o_r, .position = { .x = o_x, .y = o_y } };
+
+  DArray *obstacles = darray_init();
+  darray_set(obstacles, &co, 0);
+
+  printf("(x-%g)^2 + (y-%g)^2 = %g^2\n",m_x,m_y,m_r);
+  printf("(x-%g)^2 + (y-%g)^2 = %g^2\n",n_x,n_y,n_r);
+
+  DArray *out = tangent_circle_outer_intersects(m_x,m_y,m_r,n_x,n_y,n_r);
+
+  MapPoint *tmp = NULL;
+  if(out) {
+
+    for(size_t ii = 0; ii < 2; ii++) {
+      tmp = (MapPoint*) darray_iterate(out, tmp);
+      MapPoint *first = tmp;
+
+      print_point(*first);
+
+      tmp = (MapPoint*) darray_iterate(out, tmp);
+      MapPoint *second = tmp;
+
+      printf(" -> ");
+      print_point(*second);
+
+      if(tangent_is_blocked(first, second, obstacles)) {
+        printf(" !! Path is blocked !!");
+      }
+      printf("\n");
+
+    }
+     
+    darray_destroy(out,free);
+  }
+
+  darray_destroy(obstacles, NULL);
+
+}
+
 int main(int argc, const char** argv) {
 
   example1();
+  printf("\n");
   example2();
+  printf("\n");
+  example3();
 
   return 0;
 }

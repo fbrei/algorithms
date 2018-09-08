@@ -40,6 +40,17 @@ typedef struct _MapPoint {
 } MapPoint;
 
 
+/*! \struct _CircularObstacle 
+ *  \brief Brief struct description
+ *
+ *  Detailed description
+ */
+typedef struct _CircularObstacle {
+  MapPoint position;
+  double radius;
+} CircularObstacle;
+
+
 
 /**
  * \brief Calculates the tangents on a circle given an external point
@@ -116,6 +127,20 @@ DArray* tangent_circle_outer_intersects(double source_x, double source_y, double
  */
 DArray* tangent_circle_inner_intersects(double source_x, double source_y, double source_r,
     double target_x, double target_y, double target_r);
+
+/**
+ * \brief Calculates if the path between two points is blocked
+ * by an obstacle
+ *
+ * Given two points, we need to know if the path between them is passable
+ * for our route planning problem.
+ * 
+ * \param *p1 The starting point
+ * \param *p2 The goal point
+ * \param *obstacles The obstacles on the map
+ * \return 1 if pass is block (cannot be traversed), 0 if it is free
+ */
+unsigned short tangent_is_blocked(MapPoint *p1, MapPoint *p2, DArray *obstacles);
 
 #endif /* end of include guard: TANGENTS_H_UJO8EG29 */
 
