@@ -45,15 +45,11 @@ typedef struct _CircularObstacle {
  * touch the circle (for exampling if you want to calculate a visibility
  * graph)
  *
- * \param point_x x-coordinate of the point
- * \param point_y y-coordinate of the point
- * \param circ_x x-coordinate of the circle
- * \param circ_y y-coordinate of the circle
- * \param circ_r Radius of the circle
+ * \param *p The point on the 2D map
+ * \param *c The round obstacle / circle
  * \return A DArray containing the points of intersection
  */
-DArray* tangent_circle_point_intersects(double point_x, double point_y,
-    double circ_x, double circ_y, double circ_r);
+DArray* tangent_circle_point_intersects(MapPoint *p, CircularObstacle *c);
 
 
 /**
@@ -64,35 +60,27 @@ DArray* tangent_circle_point_intersects(double point_x, double point_y,
  * where the outer tangent originating from the source touches the
  * target circle.
  * 
- * \param source_x x-coordinate of source circle
- * \param source_y x-coordinate of source circle
- * \param source_r Radius of source circle
- * \param target_x x-coordinate of target circle
- * \param target_y x-coordinate of target circle
- * \param target_r Radius of target circle
+ * \param *c1 The first circle
+ * \param *c2 The second circle
  * \return A DArray containing the points of origin and intersection in pairs
  */
-DArray* tangent_circle_outer_intersects(double source_x, double source_y, double source_r,
-    double target_x, double target_y, double target_r);
+DArray* tangent_circle_outer_intersects(CircularObstacle *c1, CircularObstacle *c2);
+
 
 /**
- * \brief Calculates the intersection points of the outer
+ * \brief Calculates the intersection points of the inner
  * tangents between two circles.
  *
  * Given two descriptions of circles, this function returns the points
  * where the outer tangent originating from the source touches the
  * target circle.
  * 
- * \param source_x x-coordinate of source circle
- * \param source_y x-coordinate of source circle
- * \param source_r Radius of source circle
- * \param target_x x-coordinate of target circle
- * \param target_y x-coordinate of target circle
- * \param target_r Radius of target circle
+ * \param *c1 The first circle
+ * \param *c2 The second circle
  * \return A DArray containing the points of origin and intersection in pairs
  */
-DArray* tangent_circle_inner_intersects(double source_x, double source_y, double source_r,
-    double target_x, double target_y, double target_r);
+DArray* tangent_circle_inner_intersects(CircularObstacle *c1, CircularObstacle *c2);
+
 
 /**
  * \brief Calculates if the path between two points is blocked

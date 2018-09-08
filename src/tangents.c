@@ -4,8 +4,14 @@
 #include <math.h>
 
 
-DArray* tangent_circle_point_intersects(double point_x, double point_y, double circ_x, double circ_y, double circ_r) {
+DArray* tangent_circle_point_intersects(MapPoint *p, CircularObstacle *c) {
 
+  double point_x = p->x;
+  double point_y = p->y;
+
+  double circ_x = c->position.x;
+  double circ_y = c->position.y;
+  double circ_r = c->radius;
 
   // Point in the middle between P and center of circle
   double center_x = (point_x + circ_x) / 2;
@@ -80,8 +86,15 @@ DArray* tangent_circle_point_intersects(double point_x, double point_y, double c
   }
 }
 
-DArray* tangent_circle_outer_intersects(double source_x, double source_y, double source_r,
-    double target_x, double target_y, double target_r) {
+DArray* tangent_circle_outer_intersects(CircularObstacle *c1, CircularObstacle *c2) {
+
+  double source_x = c1->position.x;
+  double source_y = c1->position.y;
+  double source_r = c1->radius;
+
+  double target_x = c2->position.x;
+  double target_y = c2->position.y;
+  double target_r = c2->radius;
 
   if(source_r == target_r) {
   
@@ -134,8 +147,15 @@ DArray* tangent_circle_outer_intersects(double source_x, double source_y, double
   return NULL;
 }
 
-DArray* tangent_circle_inner_intersects(double source_x, double source_y, double source_r,
-    double target_x, double target_y, double target_r) {
+DArray* tangent_circle_inner_intersects(CircularObstacle *c1, CircularObstacle *c2) {
+
+  double source_x = c1->position.x;
+  double source_y = c1->position.y;
+  double source_r = c1->radius;
+
+  double target_x = c2->position.x;
+  double target_y = c2->position.y;
+  double target_r = c2->radius;
 
   if(source_r == target_r) {
 
@@ -222,18 +242,35 @@ unsigned short tangent_is_blocked(MapPoint *p1, MapPoint *p2, DArray *obstacles)
   while((tmp = darray_iterate(obstacles, tmp)) != NULL) {
     CircularObstacle *co = (CircularObstacle*) tmp;
 
-    double m = (p1->y - p2->y) / (p1->x - p2->x);
-    double n = -p1->x * m + p1->y;
-
     double x = co->position.x;
     double y = co->position.y;
-    double r = co->radius;
+
+    double r = 0.99 * co->radius;
+
+    double m = (p1->y - p2->y) / (p1->x - p2->x);
+    double n = -p1->x * m + p1->y;
 
     double p = (2.0 * (m*n - x - m * y)) / (m * m + 1);
     double q = (n*n + x * x + y * y - 2 * n * y - r * r) / (m * m + 1);
 
     if( (p*p)/4 > q ) {
-      return 1;
+
+      double min_x = (p1->x < p2->x) ? p1->x : p2->x;
+      double min_y = (p1->y < p2->y) ? p1->y : p2->y;
+
+      double max_x = (p1->x < p2->x) ? p2->x : p1->x;
+      double max_y = (p1->y < p2->y) ? p2->y : p1->y;
+
+      double sqrt_q = sqrt( (p*p)/4.0 - q  );
+
+      double x1 = -p / 2.0 + sqrt_q, y1 = m * x1 + n;
+      double x2 = -p / 2.0 + sqrt_q, y2 = m * x2 + n;
+
+      if( (x1 > min_x && x1 < max_x && y1 > min_y && y1 < max_y)
+       || (x2 > min_x && x2 < max_x && y2 > min_y && y2 < max_y) ) {
+        return 1;
+      } 
+
     }
   }
 
