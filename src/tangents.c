@@ -150,17 +150,25 @@ DArray* tangent_circle_outer_intersects(double source_x, double source_y, double
     DArray *result = darray_init();
     MapPoint *p1 = malloc(sizeof(MapPoint));
     MapPoint *p2 = malloc(sizeof(MapPoint));
+    MapPoint *p3 = malloc(sizeof(MapPoint));
+    MapPoint *p4 = malloc(sizeof(MapPoint));
 
     if(source_x != target_x) {
 
       double m = (target_y - source_y) / (target_x - source_x);
       double phi = atan(m);
 
-      p1->x = -target_r * sin(phi) + target_x;
-      p1->y = target_r * cos(phi) + target_y;
+      p1->x = -target_r * sin(phi) + source_x;
+      p1->y = target_r * cos(phi) + source_y;
 
-      p2->x = target_r * sin(phi) + target_x;
-      p2->y = -target_r * cos(phi) + target_y;
+      p3->x = target_r * sin(phi) + source_x;
+      p3->y = -target_r * cos(phi) + source_y;
+
+      p2->x = -target_r * sin(phi) + target_x;
+      p2->y = target_r * cos(phi) + target_y;
+
+      p4->x = target_r * sin(phi) + target_x;
+      p4->y = -target_r * cos(phi) + target_y;
 
     } else {
 
@@ -169,11 +177,18 @@ DArray* tangent_circle_outer_intersects(double source_x, double source_y, double
 
       p2->x = target_x + target_r;
       p2->y = target_y;
+
+      p3->x = 0;
+      p3->y = 0;
+      p4->x = 0;
+      p4->y = 0;
       
     }
 
     darray_set(result,p1,0);
     darray_set(result,p2,1);
+    darray_set(result,p3,2);
+    darray_set(result,p4,3);
 
     return result;
   
@@ -189,6 +204,8 @@ DArray* tangent_circle_inner_intersects(double source_x, double source_y, double
     DArray *result = darray_init();
     MapPoint *p1 = malloc(sizeof(MapPoint));
     MapPoint *p2 = malloc(sizeof(MapPoint));
+    MapPoint *p3 = malloc(sizeof(MapPoint));
+    MapPoint *p4 = malloc(sizeof(MapPoint));
 
 
     double center_x = (source_x + target_x) / 2.0;
@@ -220,10 +237,17 @@ DArray* tangent_circle_inner_intersects(double source_x, double source_y, double
       double y1 = -p / 2.0 + sqrt_q, x1 = m * y1 + n;
       double y2 = -p / 2.0 - sqrt_q, x2 = m * y2 + n;
 
-      p1->x = x1;
-      p1->y = y1;
-      p2->x = x2;
-      p2->y = y2;
+      p1->x = 2.0 * center_x - x1;
+      p1->y = 2.0 * center_y - y1;
+
+      p2->x = x1;
+      p2->y = y1;
+
+      p3->x = 2.0 * center_x - x2;
+      p3->y = 2.0 * center_y - y2;
+
+      p4->x = x2;
+      p4->y = y2;
 
     } else {
       
@@ -235,15 +259,17 @@ DArray* tangent_circle_inner_intersects(double source_x, double source_y, double
       double x1 = -p / 2.0 + sqrt_q, y1 = y;
       double x2 = -p / 2.0 - sqrt_q, y2 = y;
 
-      p1->x = x1;
-      p1->y = y1;
-      p2->x = x2;
-      p2->y = y2;
+      p2->x = x1;
+      p2->y = y1;
+      p4->x = x2;
+      p4->y = y2;
 
     }
 
     darray_set(result,p1,0);
     darray_set(result,p2,1);
+    darray_set(result,p3,2);
+    darray_set(result,p4,3);
 
     return result;
   }

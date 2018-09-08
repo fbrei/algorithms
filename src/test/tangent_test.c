@@ -11,6 +11,8 @@ void print_results(DArray *out) {
     if(tmp == NULL) {
       break;
     }
+    printf("(%5.2lf, %5.2lf) -> ", tmp->x, tmp->y);
+    tmp = (MapPoint*) darray_iterate(out, tmp);
     printf("(%5.2lf, %5.2lf)\n", tmp->x, tmp->y);
   }
 }
@@ -20,13 +22,13 @@ void example1() {
   printf("Tangent circle point\n");
   printf("====================\n");
 
-  double point_x = 2;
-  double point_y = 6;
+  double point_x = -6;
+  double point_y = -8;
 
-  double circ_x = 9;
-  double circ_y = 6;
+  double circ_x = -3;
+  double circ_y = -5;
 
-  double circ_r = 3;
+  double circ_r = 2;
 
   DArray *out = tangent_circle_point_intersects(point_x, point_y, circ_x, circ_y, circ_r);
 
@@ -45,8 +47,8 @@ void example2() {
   printf("Tangent circle circle\n");
   printf("=====================\n");
 
-  double m_x = 10.0, m_y = 2.0, m_r = 2.0;
-  double n_x = 3.0, n_y = 2.0, n_r = 2.0;
+  double m_x = -3.0, m_y = -5.0, m_r = 2.0;
+  double n_x = 10.0, n_y = 3.0, n_r = 2.0;
 
   printf("(x-%g)^2 + (y-%g)^2 = %g^2\n",m_x,m_y,m_r);
   printf("(x-%g)^2 + (y-%g)^2 = %g^2\n",n_x,n_y,n_r);

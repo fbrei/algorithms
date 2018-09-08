@@ -93,7 +93,7 @@ DArray* tangent_circle_point_intersects(double point_x, double point_y,
  * \param target_x x-coordinate of target circle
  * \param target_y x-coordinate of target circle
  * \param target_r Radius of target circle
- * \return A DArray containing the points of intersection
+ * \return A DArray containing the points of origin and intersection in pairs
  */
 DArray* tangent_circle_outer_intersects(double source_x, double source_y, double source_r,
     double target_x, double target_y, double target_r);
@@ -112,7 +112,7 @@ DArray* tangent_circle_outer_intersects(double source_x, double source_y, double
  * \param target_x x-coordinate of target circle
  * \param target_y x-coordinate of target circle
  * \param target_r Radius of target circle
- * \return A DArray containing the points of intersection
+ * \return A DArray containing the points of origin and intersection in pairs
  */
 DArray* tangent_circle_inner_intersects(double source_x, double source_y, double source_r,
     double target_x, double target_y, double target_r);
