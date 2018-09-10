@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <math.h>
 
+#define M_PI 3.141592653587932
 
 DArray* tangent_circle_point_intersects(MapPoint *p, CircularObstacle *c) {
 
@@ -275,4 +276,72 @@ unsigned short tangent_is_blocked(MapPoint *p1, MapPoint *p2, DArray *obstacles)
   }
 
   return 0;
+}
+
+CircularObstacle* obstacle_init(double x, double y, double r) {
+
+  CircularObstacle *c = malloc(sizeof(CircularObstacle));
+  c->position.x = x;
+  c->position.y = y;
+  c->radius = r;
+
+  c->_num_map_points = 0;
+  c->_map_points = darray_init();
+
+  return c;
+
+}
+
+void obstacle_destroy(void *c) {
+
+  CircularObstacle *co = (CircularObstacle*) c;
+  darray_destroy(co->_map_points, NULL);
+  free(co);
+}
+
+void _obstacle_add_map_point(CircularObstacle *c, MapPoint *p) {
+
+  darray_set(c->_map_points, p, c->_num_map_points);
+  c->_num_map_points++;
+
+}
+
+void _obstacle_connect_map_points(CircularObstacle *c, Graph *g) {
+  
+  void *tmp = NULL;
+  while((tmp = darray_iterate(c->_map_points, tmp)) != NULL) {
+
+    MapPoint *m = (MapPoint*) tmp;
+    m->score = atan((m->y - c->position.y) / (m->x - c->position.x)); 
+    if(m->y < c->position.y) {
+      m->score += M_PI;
+    }
+  }
+
+  for(size_t ii = 0; ii < c->_num_map_points; ii++) {
+    for(size_t jj = 0; jj < c->_num_map_points - (ii + 1); jj++) {
+      MapPoint *m1 = (MapPoint*) darray_get(c->_map_points, jj);
+      MapPoint *m2 = (MapPoint*) darray_get(c->_map_points, jj+1);
+      if(m1->score > m2->score) {
+        darray_set(c->_map_points, m2, jj);
+        darray_set(c->_map_points, m1, jj+1);
+      }
+    }
+  }
+
+  /* tmp = NULL; */
+  /* printf("(%g,%g)\n", c->position.x, c->position.y); */
+  /* while((tmp = darray_iterate(c->_map_points, tmp)) != NULL) { */
+  /*  */
+  /*   MapPoint *m = (MapPoint*) tmp; */
+  /*   printf("    (%g,%g) | %g\n", m->x, m->y, m->score); */
+  /* } */
+
+
+  for(size_t ii = 0; ii < c->_num_map_points; ii++) {
+    void *first = darray_get(c->_map_points, ii);
+    void *second = darray_get(c->_map_points, (ii+1) % c->_num_map_points);
+    graph_connect(g, first, second, 1);
+  }
+
 }

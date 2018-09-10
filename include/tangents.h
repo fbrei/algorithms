@@ -24,6 +24,7 @@
 typedef struct _MapPoint {
   double x;   /**< The x-coordinate */
   double y;   /**< The y-coordinate */
+  double score;
 } MapPoint;
 
 
@@ -35,8 +36,27 @@ typedef struct _MapPoint {
 typedef struct _CircularObstacle {
   MapPoint position;
   double radius;
+
+  size_t _num_map_points;
+  DArray *_map_points;
 } CircularObstacle;
 
+
+CircularObstacle* obstacle_init(double x, double y, double r);
+void obstacle_destroy(void *c);
+
+/**
+ * \brief Register a map point with a circular object.
+ *
+ * This is an internal function and should never have
+ * to be called by an outsider.
+ *
+ * \param *c The obstacle that the point lives on
+ * \param *p The map point.
+ */
+void _obstacle_add_map_point(CircularObstacle *c, MapPoint *p);
+
+void _obstacle_connect_map_points(CircularObstacle *c, Graph *g);
 
 /**
  * \brief Calculates the points where the tangent would touch the circle
