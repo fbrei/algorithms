@@ -5,6 +5,8 @@
 
 #define M_PI 3.141592653587932
 
+double _get_arc_length(CircularObstacle *c, void *first_point, void *second_point);
+
 DArray* tangent_circle_point_intersects(MapPoint *p, CircularObstacle *c) {
 
   double point_x = p->x;
@@ -312,10 +314,8 @@ void _obstacle_connect_map_points(CircularObstacle *c, Graph *g) {
   while((tmp = darray_iterate(c->_map_points, tmp)) != NULL) {
 
     MapPoint *m = (MapPoint*) tmp;
-    m->score = atan((m->y - c->position.y) / (m->x - c->position.x)); 
-    if(m->y < c->position.y) {
-      m->score += M_PI;
-    }
+    m->score = acos((m->x - c->position.x) / c->radius);
+    if(m->y < c->position.y) m->score = -(m->score);
   }
 
   for(size_t ii = 0; ii < c->_num_map_points; ii++) {
@@ -329,19 +329,25 @@ void _obstacle_connect_map_points(CircularObstacle *c, Graph *g) {
     }
   }
 
-  /* tmp = NULL; */
-  /* printf("(%g,%g)\n", c->position.x, c->position.y); */
-  /* while((tmp = darray_iterate(c->_map_points, tmp)) != NULL) { */
-  /*  */
-  /*   MapPoint *m = (MapPoint*) tmp; */
-  /*   printf("    (%g,%g) | %g\n", m->x, m->y, m->score); */
-  /* } */
-
-
   for(size_t ii = 0; ii < c->_num_map_points; ii++) {
     void *first = darray_get(c->_map_points, ii);
     void *second = darray_get(c->_map_points, (ii+1) % c->_num_map_points);
-    graph_connect(g, first, second, 1);
+
+    double cost = _get_arc_length(c, first, second);
+    graph_connect(g, first, second, cost);
+    graph_connect(g, second, first, cost);
   }
+
+}
+
+double _get_arc_length(CircularObstacle *c, void *first_point, void *second_point) {
+
+  MapPoint *m1 = (MapPoint*) first_point;
+  MapPoint *m2 = (MapPoint*) second_point;
+
+  double dx = m1->x - m2->x;
+  double dy = m1->y - m2->y;
+
+  return sqrt(dx*dx + dy*dy);
 
 }

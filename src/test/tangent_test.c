@@ -176,6 +176,11 @@ void example3() {
 
 void example4() {
 
+  // This function suffers from heavy memory leakage but I will 
+  // not fix this because this is just an example and a testing
+  // ground for the actual function that I implemented after
+  // this one
+
   printf("Calculate an entire graph with start and goal\n");
   printf("=============================================\n");
   printf("For a visualization visit: \n");
@@ -320,6 +325,7 @@ void example4() {
   while((tmp = darray_iterate(obstacles, tmp)) != NULL) {
     _obstacle_connect_map_points((CircularObstacle*) tmp, g);
   }
+
 #if PRINT_GRAPH
   graph_print(g, print_graph_point);
 #endif
