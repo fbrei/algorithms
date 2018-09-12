@@ -7,7 +7,7 @@
 
 double _get_arc_length(CircularObstacle *c, void *first_point, void *second_point);
 
-DArray* tangent_circle_point_intersects(MapPoint *p, CircularObstacle *c) {
+DList* tangent_circle_point_intersects(MapPoint *p, CircularObstacle *c) {
 
   double point_x = p->x;
   double point_y = p->y;
@@ -45,7 +45,7 @@ DArray* tangent_circle_point_intersects(MapPoint *p, CircularObstacle *c) {
     double x1 = -p/2 + sqrt_q, x2 = -p/2 - sqrt_q;
     double y1 = m * x1 + n, y2 = m * x2 + n;
 
-    DArray *result = darray_init();
+    DList *result = dlist_init();
 
     MapPoint *p1 = malloc(sizeof(MapPoint));
     p1->x = x1;
@@ -55,8 +55,8 @@ DArray* tangent_circle_point_intersects(MapPoint *p, CircularObstacle *c) {
     p2->x = x2;
     p2->y = y2;
 
-    darray_set(result, p1, 0);
-    darray_set(result, p2, 1);
+    dlist_push(result,p1);
+    dlist_push(result,p2);
 
     return result;
   } else {
@@ -71,7 +71,7 @@ DArray* tangent_circle_point_intersects(MapPoint *p, CircularObstacle *c) {
 
     double y1 = -p/2 + sqrt_q, y2 = -p/2 - sqrt_q;
 
-    DArray *result = darray_init();
+    DList *result = dlist_init();
 
     MapPoint *p1 = malloc(sizeof(MapPoint));
     p1->x = x;
@@ -81,15 +81,15 @@ DArray* tangent_circle_point_intersects(MapPoint *p, CircularObstacle *c) {
     p2->x = x;
     p2->y = y2;
 
-    darray_set(result, p1, 0);
-    darray_set(result, p2, 1);
+    dlist_push(result,p1);
+    dlist_push(result,p2);
 
     return result;
   
   }
 }
 
-DArray* tangent_circle_outer_intersects(CircularObstacle *c1, CircularObstacle *c2) {
+DList* tangent_circle_outer_intersects(CircularObstacle *c1, CircularObstacle *c2) {
 
   double source_x = c1->position.x;
   double source_y = c1->position.y;
@@ -101,7 +101,7 @@ DArray* tangent_circle_outer_intersects(CircularObstacle *c1, CircularObstacle *
 
   if(source_r == target_r) {
   
-    DArray *result = darray_init();
+    DList *result = dlist_init();
     MapPoint *p1 = malloc(sizeof(MapPoint));
     MapPoint *p2 = malloc(sizeof(MapPoint));
     MapPoint *p3 = malloc(sizeof(MapPoint));
@@ -139,10 +139,10 @@ DArray* tangent_circle_outer_intersects(CircularObstacle *c1, CircularObstacle *
       
     }
 
-    darray_set(result,p1,0);
-    darray_set(result,p2,1);
-    darray_set(result,p3,2);
-    darray_set(result,p4,3);
+    dlist_push(result,p1);
+    dlist_push(result,p2);
+    dlist_push(result,p3);
+    dlist_push(result,p4);
 
     return result;
   
@@ -150,7 +150,7 @@ DArray* tangent_circle_outer_intersects(CircularObstacle *c1, CircularObstacle *
   return NULL;
 }
 
-DArray* tangent_circle_inner_intersects(CircularObstacle *c1, CircularObstacle *c2) {
+DList* tangent_circle_inner_intersects(CircularObstacle *c1, CircularObstacle *c2) {
 
   double source_x = c1->position.x;
   double source_y = c1->position.y;
@@ -162,7 +162,7 @@ DArray* tangent_circle_inner_intersects(CircularObstacle *c1, CircularObstacle *
 
   if(source_r == target_r) {
 
-    DArray *result = darray_init();
+    DList *result = dlist_init();
     MapPoint *p1 = malloc(sizeof(MapPoint));
     MapPoint *p2 = malloc(sizeof(MapPoint));
     MapPoint *p3 = malloc(sizeof(MapPoint));
@@ -227,10 +227,10 @@ DArray* tangent_circle_inner_intersects(CircularObstacle *c1, CircularObstacle *
 
     }
 
-    darray_set(result,p1,0);
-    darray_set(result,p2,1);
-    darray_set(result,p3,2);
-    darray_set(result,p4,3);
+    dlist_push(result,p1);
+    dlist_push(result,p2);
+    dlist_push(result,p3);
+    dlist_push(result,p4);
 
     return result;
   }
@@ -238,11 +238,11 @@ DArray* tangent_circle_inner_intersects(CircularObstacle *c1, CircularObstacle *
   return NULL;
 }
 
-unsigned short tangent_is_blocked(MapPoint *p1, MapPoint *p2, DArray *obstacles) {
+unsigned short tangent_is_blocked(MapPoint *p1, MapPoint *p2, DList *obstacles) {
 
   void *tmp = NULL;
 
-  while((tmp = darray_iterate(obstacles, tmp)) != NULL) {
+  while((tmp = dlist_iterate(obstacles, tmp)) != NULL) {
     CircularObstacle *co = (CircularObstacle*) tmp;
 
     double x = co->position.x;

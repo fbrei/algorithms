@@ -67,9 +67,9 @@ void _obstacle_connect_map_points(CircularObstacle *c, Graph *g);
  *
  * \param *p The point on the 2D map
  * \param *c The round obstacle / circle
- * \return A DArray containing the points of intersection
+ * \return A DList containing the points of intersection
  */
-DArray* tangent_circle_point_intersects(MapPoint *p, CircularObstacle *c);
+DList* tangent_circle_point_intersects(MapPoint *p, CircularObstacle *c);
 
 
 /**
@@ -82,9 +82,9 @@ DArray* tangent_circle_point_intersects(MapPoint *p, CircularObstacle *c);
  * 
  * \param *c1 The first circle
  * \param *c2 The second circle
- * \return A DArray containing the points of origin and intersection in pairs
+ * \return A DList containing the points of origin and intersection in pairs
  */
-DArray* tangent_circle_outer_intersects(CircularObstacle *c1, CircularObstacle *c2);
+DList* tangent_circle_outer_intersects(CircularObstacle *c1, CircularObstacle *c2);
 
 
 /**
@@ -97,9 +97,9 @@ DArray* tangent_circle_outer_intersects(CircularObstacle *c1, CircularObstacle *
  * 
  * \param *c1 The first circle
  * \param *c2 The second circle
- * \return A DArray containing the points of origin and intersection in pairs
+ * \return A DList containing the points of origin and intersection in pairs
  */
-DArray* tangent_circle_inner_intersects(CircularObstacle *c1, CircularObstacle *c2);
+DList* tangent_circle_inner_intersects(CircularObstacle *c1, CircularObstacle *c2);
 
 
 /**
@@ -114,7 +114,7 @@ DArray* tangent_circle_inner_intersects(CircularObstacle *c1, CircularObstacle *
  * \param *obstacles The obstacles on the map
  * \return 1 if pass is block (cannot be traversed), 0 if it is free
  */
-unsigned short tangent_is_blocked(MapPoint *p1, MapPoint *p2, DArray *obstacles);
+unsigned short tangent_is_blocked(MapPoint *p1, MapPoint *p2, DList *obstacles);
 
 #endif /* end of include guard: TANGENTS_H_UJO8EG29 */
 
