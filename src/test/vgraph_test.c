@@ -21,7 +21,7 @@ double euclid_distance(void*, void*);
  */
 void print_graph_node(void*);
 
-unsigned long hash(void *, void*);
+unsigned long hash(void *);
 
 int main(int argc, const char** argv) {
 
@@ -59,7 +59,7 @@ int main(int argc, const char** argv) {
   // to estimate the remaining distance to the goal.
   t1 = clock();
   Graph *g = vgraph_circular_obstacles(start, goal, obstacles, euclid_distance);
-  AStarPathNode *p = astar(g, start, goal, euclid_distance, NULL);
+  AStarPathNode *p = astar(g, start, goal, euclid_distance, hash);
   t2 = clock();
 
   // Calculate the time taken in seconds
@@ -108,21 +108,18 @@ double euclid_distance(void *n1, void *n2) {
 }
 
 
-unsigned long hash(void *n1, void *n2) {
-  MapPoint *m1 = (MapPoint*) n1;
-  MapPoint *m2 = (MapPoint*) n2;
+unsigned long hash(void *n) {
+  MapPoint *m = (MapPoint*) n;
 
   union longdouble {
     unsigned long out;
     double in;
-  } a,b,c,d ;
+  } a,b ;
 
-  a.in = m1->x;
-  b.in = m1->y;
-  c.in = m2->x;
-  d.in = m2->y;
+  a.in = m->x;
+  b.in = m->y;
 
-  return (a.out & 0xFF) | (b.out & 0xFF00) | (c.out & 0xFF0000) | (d.out & 0xFF000000);
+  return (a.out & 0xFFFF) | (b.out & 0xFFFF0000);
 }
 
 void print_graph_node(void* v) {
