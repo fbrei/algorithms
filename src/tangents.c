@@ -308,14 +308,18 @@ void _obstacle_add_map_point(CircularObstacle *c, MapPoint *p) {
 
 }
 
-void _obstacle_connect_map_points(CircularObstacle *c, Graph *g) {
-  
+void _obstacle_connect_map_points(CircularObstacle *c, Graph *g, MapPoint *goal, double (*heuristic)(void*, void*)) {
+
   void *tmp = NULL;
+  MapPoint origin = { .x = c->position.x + c->radius, .y = c->position.y };
   while((tmp = darray_iterate(c->_map_points, tmp)) != NULL) {
 
     MapPoint *m = (MapPoint*) tmp;
-    m->score = acos((m->x - c->position.x) / c->radius);
-    if(m->y < c->position.y) m->score = -(m->score);
+    m->score = _get_arc_length(c,&origin,m);
+    if(heuristic != NULL && goal != NULL) {
+      m->h = heuristic((void*) goal, m);
+    }
+    if(m->y < origin.y) m->score = 2.0 * M_PI * c->radius - (m->score);
   }
 
   for(size_t ii = 0; ii < c->_num_map_points; ii++) {
@@ -329,15 +333,23 @@ void _obstacle_connect_map_points(CircularObstacle *c, Graph *g) {
     }
   }
 
+
   for(size_t ii = 0; ii < c->_num_map_points; ii++) {
     void *first = darray_get(c->_map_points, ii);
     void *second = darray_get(c->_map_points, (ii+1) % c->_num_map_points);
 
     double cost = _get_arc_length(c, first, second);
-    graph_connect(g, first, second, cost);
-    graph_connect(g, second, first, cost);
+    if(goal != NULL && heuristic != NULL) {
+      if(((MapPoint*) first)->h < ((MapPoint*) second)->h) {
+        graph_connect(g, second, first, cost);
+      } else {
+        graph_connect(g, first, second, cost);
+      }
+    } else {
+      graph_connect(g, first, second, cost);
+      graph_connect(g, second, first, cost);
+    }
   }
-
 }
 
 double _get_arc_length(CircularObstacle *c, void *first_point, void *second_point) {
@@ -348,6 +360,8 @@ double _get_arc_length(CircularObstacle *c, void *first_point, void *second_poin
   double dx = m1->x - m2->x;
   double dy = m1->y - m2->y;
 
-  return sqrt(dx*dx + dy*dy);
+  double direct = sqrt(dx*dx + dy*dy);
+  double angle = 2 * asin(direct / (2.0 * c->radius));
 
+  return fabs(angle) * c->radius;
 }

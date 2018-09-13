@@ -90,10 +90,10 @@ Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacl
 
     // ------------------------------------------------------------------------------
 
-    void *tmp = NULL;
-    while((tmp = dlist_iterate(obstacles, tmp)) != NULL) {
-      _obstacle_connect_map_points((CircularObstacle*) tmp, g);
-    }
+  }
+  void *tmp = NULL;
+  while((tmp = dlist_iterate(obstacles, tmp)) != NULL) {
+    _obstacle_connect_map_points((CircularObstacle*) tmp, g, goal, distance_metric);
   }
 
   return g;

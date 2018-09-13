@@ -7,11 +7,19 @@
 #include <time.h>
 #include <stdlib.h>
 
+#define PRINT_FULL_GRAPH 1
+
 /**
  * Calculates the euclidian distance between two map points
  * that must be given as void pointers for compatibility
  */
 double euclid_distance(void*, void*);
+
+
+/**
+ * Can be used to print out the graph for postprocessing
+ */
+void print_graph_node(void*);
 
 unsigned long hash(void *, void*);
 
@@ -36,7 +44,7 @@ int main(int argc, const char** argv) {
   c = obstacle_init(10,3,2);
   dlist_push(obstacles, c);
 
-  c = obstacle_init(3,2,2);
+  c = obstacle_init(3,0,2);
   dlist_push(obstacles, c);
 
   c = obstacle_init(-3,-5,2);
@@ -60,13 +68,28 @@ int main(int argc, const char** argv) {
   // Output the final path by traversing the list that was returned
   printf("Final path:\n");
   while(p) {
-    MapPoint *m = p->data;
-    printf("(%g,%g)\n",m->x, m->y);
+    print_graph_node(p->data);
+    printf("\n");
     p = p->parent;
   }
 
   // And some statistics
-  printf("Time to find it: %gs\n", time_taken);
+  fprintf(stderr, "Time to find it: %gs (%luus)\n", time_taken, t2-t1);
+
+
+#if PRINT_FULL_GRAPH
+  // This will be used by a python script to create a plot
+  printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
+  graph_print(g, print_graph_node);
+  void *obst = NULL;
+  printf("OBSTACLES: ");
+  while((obst = dlist_iterate(obstacles,obst)) != NULL) {
+    CircularObstacle *c = (CircularObstacle*) obst;
+    printf("(%g,%g,%g),",c->position.x, c->position.y, c->radius);
+  }
+  printf("\n");
+  printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
+#endif
 
   return EXIT_SUCCESS;
 }
@@ -99,5 +122,11 @@ unsigned long hash(void *n1, void *n2) {
   c.in = m2->x;
   d.in = m2->y;
 
-  return (a.out & 0xFF) | ((b.out << 8) & 0xFF00) | ((c.out << 16) & 0xFF0000) | ((d.out << 24) & 0xFF000000);
+  return (a.out & 0xFF) | (b.out & 0xFF00) | (c.out & 0xFF0000) | (d.out & 0xFF000000);
+}
+
+void print_graph_node(void* v) {
+
+  MapPoint *m = (MapPoint*) v;
+  printf("(%g,%g)", m->x, m->y);
 }

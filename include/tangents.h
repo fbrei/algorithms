@@ -25,6 +25,7 @@ typedef struct _MapPoint {
   double x;   /**< The x-coordinate */
   double y;   /**< The y-coordinate */
   double score;
+  double h;
 } MapPoint;
 
 
@@ -56,7 +57,7 @@ void obstacle_destroy(void *c);
  */
 void _obstacle_add_map_point(CircularObstacle *c, MapPoint *p);
 
-void _obstacle_connect_map_points(CircularObstacle *c, Graph *g);
+void _obstacle_connect_map_points(CircularObstacle *c, Graph *g, MapPoint *goal, double (*heuristic)(void*, void*));
 
 /**
  * \brief Calculates the points where the tangent would touch the circle
