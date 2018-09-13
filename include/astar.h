@@ -1,7 +1,7 @@
 #ifndef ASTAR_H_RTVQ7UZ5
 #define ASTAR_H_RTVQ7UZ5
 
-#include "../lib/dtypes/include/dtype.h"
+#include "lib/dtypes/include/dtype.h"
 
 /**
  * \brief Struct that holds A* data

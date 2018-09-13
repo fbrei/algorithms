@@ -1,4 +1,8 @@
-#include "../include/astar.h"
+#include "include/astar.h"
+
+#include <stdio.h>
+
+void print_node(void *n);
 
 AStarPathNode* astar(Graph *g, void *start, void *goal, double (*heuristic)(void*,void*),
     unsigned long (*hash)(void*)) {
@@ -63,8 +67,8 @@ AStarPathNode* astar(Graph *g, void *start, void *goal, double (*heuristic)(void
     tmp = ((AStarPathNode*) tmp)->parent;
   }
 
-  hset_destroy(explored, NULL);
-  prqueue_destroy(frontier, NULL);
+  hset_destroy(explored, free);
+  prqueue_destroy(frontier, free);
   return current;
 }
 
