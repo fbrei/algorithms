@@ -1,4 +1,4 @@
-#include "vgraph.h"
+#include "include/vgraph.h"
 #include <stdio.h>
 
 Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacles, double (*distance_metric)(void*, void*)) {

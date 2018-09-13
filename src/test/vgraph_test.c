@@ -1,21 +1,26 @@
-#include "vgraph.h"
-#include "astar.h"
-#include "tangents.h"
+#include "include/vgraph.h"
+#include "include/astar.h"
+#include "include/tangents.h"
 
 #include <math.h>
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
 
-#define PRINT_FULL_GRAPH 1
+#define PRINT_FULL_GRAPH 0
+
+
+// TODO
+// Simplification of bananas to series of lines
+// space time diagram
+// Overlapping circles
+// Visibility graph polgons
 
 /**
  * Calculates the euclidian distance between two map points
  * that must be given as void pointers for compatibility
  */
 double euclid_distance(void*, void*);
-
-// PLEASE IGNORE
 
 
 /**
@@ -36,7 +41,6 @@ int main(int argc, const char** argv) {
   MapPoint *goal = malloc(sizeof(MapPoint));
   goal->x = -6;
   goal->y = -8;
-
 
   // Next we create a list of round obstacles that
   // the agent should move around

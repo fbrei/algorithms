@@ -14,7 +14,7 @@
 #ifndef TANGENTS_H_UJO8EG29
 #define TANGENTS_H_UJO8EG29
 
-#include "dtype.h"
+#include "lib/dtypes/include/dtype.h"
 
 
 /** \brief Describes a point in a 2D-plant

@@ -1,7 +1,7 @@
 #ifndef ASTAR_H_RTVQ7UZ5
 #define ASTAR_H_RTVQ7UZ5
 
-#include "dtype.h"
+#include "../lib/dtypes/include/dtype.h"
 
 /**
  * \brief Struct that holds A* data
@@ -17,11 +17,12 @@
  * object has.
  */
 typedef struct _AStarPathNode {
-  void *data; 		                /**< The actual node data */
-  double total_dist; 	            /**< The distance traveled so far */
-  double estimate; 		            /**< The expected distance to the goal */
-  
-  struct _AStarPathNode* parent;  /**< The parent node in the best (final) path */
+  void *data;        /**< The actual node data */
+  double total_dist; /**< The distance traveled so far */
+  double estimate;   /**< The expected distance to the goal */
+
+  struct _AStarPathNode
+      *parent; /**< The parent node in the best (final) path */
 } AStarPathNode;
 
 /**
@@ -31,17 +32,18 @@ typedef struct _AStarPathNode {
  * funtion generates will also be freed. It returns
  * a pointer to the goal node that can be traversed backwards
  * by repeatedly selecting the parent attribute.
- * 
+ *
  * \param *g Graph
  * \param *start Start node
  * \param *goal Goal node
- * \param (*heuristic)(void*,void*) The heuristic to use. Can be NULL but it shouldn't
- * \param (*hash)(void*) An optional hash functions. Can be NULL, but supplying one increases speed.
- * \return Pointer to the goal node that can be traversed using the parent pointer.
+ * \param (*heuristic)(void*,void*) The heuristic to use. Can be NULL but it
+ * shouldn't \param (*hash)(void*) An optional hash functions. Can be NULL, but
+ * supplying one increases speed. \return Pointer to the goal node that can be
+ * traversed using the parent pointer.
  */
-AStarPathNode* astar(Graph *g, void *start, void *goal, 
-      double (*heuristic)(void*,void*),
-      unsigned long (*hash)(void*));
+AStarPathNode *astar(Graph *g, void *start, void *goal,
+                     double (*heuristic)(void *, void *),
+                     unsigned long (*hash)(void *));
 
 /**
  * \brief Frees an A* path.
@@ -70,7 +72,7 @@ int _astar_compare_to(void *first, void *second);
  *
  * Works by seeing if both their data pointer point to
  * the same address
- * 
+ *
  * \param *first The first node
  * \param *second The second node
  * \return 1 if equal, 0 otherwise
@@ -80,10 +82,10 @@ unsigned int _astar_equals(void *first, void *second);
 /**
  * \brief The hash to use if none is provided.
  *
- * If you do not supply a hash function but NULL instead, 
+ * If you do not supply a hash function but NULL instead,
  * this hash function will be chosen. It always returns 0,
  * effectively turning the hash set into some sort of queue.
- * 
+ *
  * \param *node The node to be hashed
  * \return Always 0
  */
@@ -94,7 +96,7 @@ unsigned long null_hash(void *node);
  *
  * If you do nt want to supply a heuristic funtion
  * you can use NULL to turn A* practically into Dijkstra
- * 
+ *
  * \param *first The first node
  * \param *second The second node
  * \return Always 0

@@ -1,4 +1,4 @@
-#include "tangents.h"
+#include "include/tangents.h"
 
 #include <stdio.h>
 #include <math.h>

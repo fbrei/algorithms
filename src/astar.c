@@ -1,4 +1,4 @@
-#include "astar.h"
+#include "../include/astar.h"
 
 AStarPathNode* astar(Graph *g, void *start, void *goal, double (*heuristic)(void*,void*),
     unsigned long (*hash)(void*)) {

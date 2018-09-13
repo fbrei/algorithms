@@ -16,8 +16,8 @@
 #ifndef VGRAPH_H_AWDEVYPA
 #define VGRAPH_H_AWDEVYPA
 
-#include "graph.h"
-#include "tangents.h"
+#include "lib/dtypes/include/graph.h"
+#include "include/tangents.h"
 
 /**
  * \brief Brief description
