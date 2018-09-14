@@ -3,7 +3,9 @@
 #include <stdio.h>
 #include <math.h>
 
+#ifndef M_PI
 #define M_PI 3.141592653587932
+#endif
 
 double _get_arc_length(CircularObstacle *c, void *first_point, void *second_point);
 
