@@ -101,6 +101,6 @@ unsigned long null_hash(void *node);
  * \param *second The second node
  * \return Always 0
  */
-double null_heuristic(void *first, void *second);
+double NULLHEURISTIC(void *first, void *second);
 
 #endif /* end of include guard: ASTAR_H_RTVQ7UZ5 */

@@ -7,8 +7,8 @@ void print_node(void *n);
 AStarPathNode* astar(Graph *g, void *start, void *goal, double (*heuristic)(void*,void*),
     unsigned long (*hash)(void*)) {
 
-  if(hash==NULL) hash=null_hash;
-  if(heuristic == NULL) heuristic = null_heuristic;
+  if(hash==NULL) hash = NULLHASH;
+  if(heuristic == NULL) heuristic = NULLHEURISTIC;
 
   PrQueue *frontier = prqueue_init(_astar_compare_to);
   frontier->equals = _astar_equals;
@@ -104,5 +104,7 @@ unsigned int _astar_equals(void *first, void* second) {
   return (m1->data == m2->data) ? 1 : 0;
 }
 
-unsigned long null_hash(void *n) { return 0l; }
-double null_heuristic(void *n, void *m) { return 0.0; }
+double NULLHEURISTIC(void *first, void *second) {
+  (void)(first), (void) second;
+  return 0.0l;
+}
