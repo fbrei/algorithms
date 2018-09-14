@@ -30,7 +30,7 @@ void print_graph_node(void*);
 
 unsigned long hash(void *);
 
-int main(int argc, const char** argv) {
+int main() {
 
   // First we need to advertise the start and end location
   // for our path planning instance
