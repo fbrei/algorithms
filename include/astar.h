@@ -79,17 +79,6 @@ int _astar_compare_to(void *first, void *second);
  */
 unsigned int _astar_equals(void *first, void *second);
 
-/**
- * \brief The hash to use if none is provided.
- *
- * If you do not supply a hash function but NULL instead,
- * this hash function will be chosen. It always returns 0,
- * effectively turning the hash set into some sort of queue.
- *
- * \param *node The node to be hashed
- * \return Always 0
- */
-unsigned long null_hash(void *node);
 
 /**
  * \brief The empty heuristic: h(n) = 0 for all n

@@ -7,6 +7,7 @@ void print_node(void *n);
 AStarPathNode* astar(Graph *g, void *start, void *goal, double (*heuristic)(void*,void*),
     unsigned long (*hash)(void*)) {
 
+
   if(hash==NULL) hash = NULLHASH;
   if(heuristic == NULL) heuristic = NULLHEURISTIC;
 
@@ -30,6 +31,10 @@ AStarPathNode* astar(Graph *g, void *start, void *goal, double (*heuristic)(void
     if(current == NULL || ((AStarPathNode*) current)->data == goal ) {
       break;
     }
+    if(hset_contains(explored,current) != -1) {
+      free(current);
+      continue;
+    }
     hset_add(explored, current);
 
     DArray *neighbors = graph_get_neighbors(g, ((AStarPathNode*) current)->data );
@@ -46,14 +51,8 @@ AStarPathNode* astar(Graph *g, void *start, void *goal, double (*heuristic)(void
 
         if(hset_contains(explored, tmp) != -1) {
           free(tmp);
-          continue;
         } else {
-          AStarPathNode *old_neighbor = prqueue_get(frontier, tmp);
-          if(old_neighbor == NULL) {
-            prqueue_add(frontier, tmp);
-          } else if(old_neighbor->total_dist + old_neighbor->estimate > tmp->total_dist + tmp->estimate) {
-            prqueue_replace(frontier, old_neighbor, tmp);
-          }
+          prqueue_add(frontier, tmp);
         }
       }
       darray_destroy(neighbors, NULL);
@@ -68,7 +67,7 @@ AStarPathNode* astar(Graph *g, void *start, void *goal, double (*heuristic)(void
   }
 
   hset_destroy(explored, free);
-  prqueue_destroy(frontier, free);
+  prqueue_destroy(frontier,free);
   return current;
 }
 
@@ -98,6 +97,7 @@ int _astar_compare_to(void *first, void *second) {
 }
 
 unsigned int _astar_equals(void *first, void* second) {
+
   AStarPathNode *m1 = (AStarPathNode*) first;
   AStarPathNode *m2 = (AStarPathNode*) second;
 

@@ -61,6 +61,7 @@ DList* tangent_circle_point_intersects(MapPoint *p, CircularObstacle *c) {
     dlist_push(result,p2);
 
     return result;
+
   } else {
   
     double x = -a / (2.0 * (center_x - circ_x));
@@ -128,23 +129,25 @@ DList* tangent_circle_outer_intersects(CircularObstacle *c1, CircularObstacle *c
 
     } else {
 
-      p1->x = target_x - target_r;
-      p1->y = target_y;
-
-      p2->x = target_x + target_r;
+      p1->x = source_x - target_r;
+      p1->y = source_y;
+      
+      p2->x = target_x - target_r;
       p2->y = target_y;
 
-      p3->x = 0;
-      p3->y = 0;
-      p4->x = 0;
-      p4->y = 0;
-      
+      p3->x = source_x + target_r;
+      p3->y = source_y;
+
+      p4->x = target_x + target_r;
+      p4->y = target_y;
+
     }
 
     dlist_push(result,p1);
     dlist_push(result,p2);
     dlist_push(result,p3);
     dlist_push(result,p4);
+
 
     return result;
   
@@ -215,6 +218,7 @@ DList* tangent_circle_inner_intersects(CircularObstacle *c1, CircularObstacle *c
     } else {
       
       double y = a / (2.0 * (target_y - circ_y));
+      double y_orig = (target_y + source_y) - y;
       double p = -2.0 * target_x;
       double q = target_x * target_x + (y - target_y) * (y - target_y) - target_r * target_r;
 
@@ -222,8 +226,15 @@ DList* tangent_circle_inner_intersects(CircularObstacle *c1, CircularObstacle *c
       double x1 = -p / 2.0 + sqrt_q, y1 = y;
       double x2 = -p / 2.0 - sqrt_q, y2 = y;
 
+      p1->x = x2;
+      p1->y = y_orig;
+
       p2->x = x1;
       p2->y = y1;
+
+      p3->x = x1;
+      p3->y = y_orig;
+
       p4->x = x2;
       p4->y = y2;
 

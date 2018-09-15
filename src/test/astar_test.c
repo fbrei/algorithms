@@ -2,6 +2,7 @@
 #include "lib/dtypes/include/dtype.h"
 #include <math.h>
 #include <stdio.h>
+#include <time.h>
 
 typedef struct _MapNode {
   double x;
@@ -28,6 +29,14 @@ void print_node(AStarPathNode *a) {
   printf("%5.2lf %5.2lf [%5.2lf]", m->x, m->y, a->estimate + a->total_dist);
 
 }
+
+
+unsigned long hash(void *item) {
+
+  return (long) item;
+
+}
+
 
 void example1() {
 
@@ -91,8 +100,15 @@ void example1() {
   graph_connect(g, m7, goal, heuristic(m7, goal));
   graph_connect(g, m8, goal, heuristic(m8, goal));
 
-  AStarPathNode *a = astar(g,start,goal,heuristic,NULL);
+  clock_t t_start_pathearch, t_end_pathearch;
+  
+  t_start_pathearch = clock();
+  AStarPathNode *a = astar(g,start,goal,heuristic,hash);
   AStarPathNode *path = a;
+  t_end_pathearch = clock();
+  
+  double total_time = ((double) (t_end_pathearch - t_start_pathearch)) / CLOCKS_PER_SEC;
+  printf("Time taken in interval pathearch: %gs\n", total_time);
   
   do {
     print_node(a);

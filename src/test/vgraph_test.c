@@ -7,14 +7,8 @@
 #include <time.h>
 #include <stdlib.h>
 
-#define PRINT_FULL_GRAPH 0
+#define PRINT_FULL_GRAPH 1
 
-
-// TODO
-// Simplification of bananas to series of lines
-// space time diagram
-// Overlapping circles
-// Visibility graph polgons
 
 /**
  * Calculates the euclidian distance between two map points
@@ -47,15 +41,17 @@ int main() {
   DList *obstacles = dlist_init();
   CircularObstacle *c;
 
-  c = obstacle_init(10,3,2);
+  c = obstacle_init(8,1,2);
   dlist_push(obstacles, c);
 
-  c = obstacle_init(3,0,2);
+  c = obstacle_init(2,1,2);
   dlist_push(obstacles, c);
 
-  c = obstacle_init(-3,-5,2);
-  dlist_push(obstacles, c);
-
+  /* c = obstacle_init(-3,-5,2); */
+  /* dlist_push(obstacles, c); */
+  /*  */
+  /* c = obstacle_init(3.5,-4.2,2); */
+  /* dlist_push(obstacles, c); */
 
   // We want to measure the execution time too
   clock_t t1, t2;
@@ -71,6 +67,10 @@ int main() {
   // Calculate the time taken in seconds
   double time_taken = ((double) t2 - t1) / CLOCKS_PER_SEC;
 
+  // And some statistics
+  fprintf(stderr, "Time to find it: %gs (%luus)\n", time_taken, t2-t1);
+  fprintf(stderr, "Total cost: %g\n", p->total_dist);
+
   // Output the final path by traversing the list that was returned
   printf("Final path:\n");
   while(p) {
@@ -78,9 +78,6 @@ int main() {
     printf("\n");
     p = p->parent;
   }
-
-  // And some statistics
-  fprintf(stderr, "Time to find it: %gs (%luus)\n", time_taken, t2-t1);
 
 
 #if PRINT_FULL_GRAPH
