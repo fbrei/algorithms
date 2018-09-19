@@ -57,7 +57,6 @@ void obstacle_destroy(void *c);
  */
 void _obstacle_add_map_point(CircularObstacle *c, MapPoint *p);
 
-void _obstacle_connect_map_points(CircularObstacle *c, Graph *g, MapPoint *goal, double (*heuristic)(void*, void*));
 
 /**
  * \brief Calculates the points where the tangent would touch the circle
@@ -116,6 +115,10 @@ DList* tangent_circle_inner_intersects(CircularObstacle *c1, CircularObstacle *c
  * \return 1 if pass is block (cannot be traversed), 0 if it is free
  */
 unsigned short tangent_is_blocked(MapPoint *p1, MapPoint *p2, DList *obstacles);
+
+void _obstacle_connect_map_points(CircularObstacle *c, Graph *g, MapPoint *goal, double (*heuristic)(void*, void*));
+void _obstacle_connect_with_intermediate(CircularObstacle *c, Graph *g, MapPoint *goal, double (*heuristic)(void*, void*));
+void _obstacle_sort_points(CircularObstacle *c, MapPoint *goal, double (*heuristic)(void*, void*));
 
 #endif /* end of include guard: TANGENTS_H_UJO8EG29 */
 

@@ -44,12 +44,12 @@ int main() {
   c = obstacle_init(8,1,2);
   dlist_push(obstacles, c);
 
-  c = obstacle_init(2,1,2);
+  c = obstacle_init(2,0,2);
   dlist_push(obstacles, c);
 
-  /* c = obstacle_init(-3,-5,2); */
-  /* dlist_push(obstacles, c); */
-  /*  */
+  c = obstacle_init(-3,-5,2);
+  dlist_push(obstacles, c);
+
   /* c = obstacle_init(3.5,-4.2,2); */
   /* dlist_push(obstacles, c); */
 
@@ -69,7 +69,11 @@ int main() {
 
   // And some statistics
   fprintf(stderr, "Time to find it: %gs (%luus)\n", time_taken, t2-t1);
-  fprintf(stderr, "Total cost: %g\n", p->total_dist);
+  if(p != NULL) {
+    fprintf(stderr, "Total cost: %g\n", p->total_dist);
+  } else {
+    fprintf(stderr,"No path found!\n");
+  }
 
   // Output the final path by traversing the list that was returned
   printf("Final path:\n");

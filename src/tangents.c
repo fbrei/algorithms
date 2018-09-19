@@ -7,6 +7,8 @@
 #define M_PI 3.141592653587932
 #endif
 
+#define NUM_INTERMEDIATES 5
+
 double _get_arc_length(CircularObstacle *c, void *first_point, void *second_point);
 
 DList* tangent_circle_point_intersects(MapPoint *p, CircularObstacle *c) {
@@ -323,6 +325,91 @@ void _obstacle_add_map_point(CircularObstacle *c, MapPoint *p) {
 
 void _obstacle_connect_map_points(CircularObstacle *c, Graph *g, MapPoint *goal, double (*heuristic)(void*, void*)) {
 
+  _obstacle_sort_points(c, goal, heuristic);
+
+  for(size_t ii = 0; ii < c->_num_map_points; ii++) {
+    void *first = darray_get(c->_map_points, ii);
+    void *second = darray_get(c->_map_points, (ii+1) % c->_num_map_points);
+
+    double cost = _get_arc_length(c, first, second);
+    if(goal != NULL && heuristic != NULL) {
+      if(((MapPoint*) first)->h < ((MapPoint*) second)->h) {
+        graph_connect(g, second, first, cost);
+      } else {
+        graph_connect(g, first, second, cost);
+      }
+    } else {
+      graph_connect(g, first, second, cost);
+      graph_connect(g, second, first, cost);
+    }
+  }
+}
+
+void _obstacle_connect_with_intermediate(CircularObstacle *c, Graph *g, MapPoint *goal, double (*heuristic)(void*, void*)) {
+
+  _obstacle_sort_points(c, goal, heuristic);
+
+  for(size_t ii = 0; ii < c->_num_map_points; ii++) {
+    MapPoint *first = (MapPoint*) darray_get(c->_map_points, ii);
+    MapPoint *second = (MapPoint*) darray_get(c->_map_points, (ii+1) % c->_num_map_points);
+
+    double r = c->radius;
+    double x0 = c->position.x;
+    double y0 = c->position.y;
+
+    double first_angle = first->score / r;
+    double second_angle = second->score / r;
+
+    double anglediff = fabs(second_angle - first_angle);
+
+
+    if(anglediff > M_PI) {
+      anglediff = 2.0 * M_PI - anglediff;
+    }
+    double d_angle = anglediff / (NUM_INTERMEDIATES + 1);
+    double new_angle = first_angle + anglediff / 2.0;
+
+    MapPoint ** intermediates = malloc(NUM_INTERMEDIATES * sizeof(MapPoint*));
+    intermediates[0] = malloc(sizeof(MapPoint));
+    intermediates[0]->x = r * cos(first_angle + d_angle) + x0;
+    intermediates[0]->y = r * sin(first_angle + d_angle) + y0;
+    double cost = heuristic(first, intermediates[0]);
+
+    graph_add(g, intermediates[0]);
+    graph_connect(g, first, intermediates[0], cost);
+    graph_connect(g, intermediates[0], first, cost);
+
+#if NUM_INTERMEDIATES > 1
+    intermediates[NUM_INTERMEDIATES - 1] = malloc(sizeof(MapPoint));
+    intermediates[NUM_INTERMEDIATES - 1]->x = r * cos(second_angle - d_angle) + x0;
+    intermediates[NUM_INTERMEDIATES - 1]->y = r * sin(second_angle - d_angle) + y0;
+    graph_add(g, intermediates[NUM_INTERMEDIATES-1]);
+#endif
+
+    graph_connect(g, intermediates[NUM_INTERMEDIATES-1], second, heuristic(intermediates[NUM_INTERMEDIATES-1], second));
+    graph_connect(g, second, intermediates[NUM_INTERMEDIATES-1], heuristic(intermediates[NUM_INTERMEDIATES-1], second));
+
+
+    for(size_t ii = 1; ii < (NUM_INTERMEDIATES - 1); ii++) {
+      intermediates[ii] = malloc(sizeof(MapPoint));
+      intermediates[ii]->x = r * cos(first_angle + ii * d_angle) + x0;
+      intermediates[ii]->y = r * sin(first_angle + ii * d_angle) + y0;
+      graph_add(g,intermediates[ii]);
+      graph_connect(g, intermediates[ii-1], intermediates[ii], cost);
+      graph_connect(g, intermediates[ii], intermediates[ii-1], cost);
+    }
+
+#if NUM_INTERMEDIATES > 1
+      graph_connect(g, intermediates[NUM_INTERMEDIATES - 2], intermediates[NUM_INTERMEDIATES - 1], cost);
+      graph_connect(g, intermediates[NUM_INTERMEDIATES - 1], intermediates[NUM_INTERMEDIATES - 2], cost);
+#endif
+
+  }
+
+}
+
+void _obstacle_sort_points(CircularObstacle *c, MapPoint *goal, double (*heuristic)(void*, void*)) {
+
   void *tmp = NULL;
   MapPoint origin = { .x = c->position.x + c->radius, .y = c->position.y };
   while((tmp = darray_iterate(c->_map_points, tmp)) != NULL) {
@@ -346,23 +433,6 @@ void _obstacle_connect_map_points(CircularObstacle *c, Graph *g, MapPoint *goal,
     }
   }
 
-
-  for(size_t ii = 0; ii < c->_num_map_points; ii++) {
-    void *first = darray_get(c->_map_points, ii);
-    void *second = darray_get(c->_map_points, (ii+1) % c->_num_map_points);
-
-    double cost = _get_arc_length(c, first, second);
-    if(goal != NULL && heuristic != NULL) {
-      if(((MapPoint*) first)->h < ((MapPoint*) second)->h) {
-        graph_connect(g, second, first, cost);
-      } else {
-        graph_connect(g, first, second, cost);
-      }
-    } else {
-      graph_connect(g, first, second, cost);
-      graph_connect(g, second, first, cost);
-    }
-  }
 }
 
 double _get_arc_length(CircularObstacle *c, void *first_point, void *second_point) {
