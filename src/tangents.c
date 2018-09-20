@@ -7,7 +7,7 @@
 #define M_PI 3.141592653587932
 #endif
 
-#define NUM_INTERMEDIATES 5
+#define NUM_INTERMEDIATES 3
 
 double _get_arc_length(CircularObstacle *c, void *first_point, void *second_point);
 
