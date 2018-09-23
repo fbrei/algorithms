@@ -5,7 +5,7 @@ DTYPESSRC=$(DTYPESDIR)/src/darray.c $(DTYPESDIR)/src/dlist.c $(DTYPESDIR)/src/gr
 ALGOSRC=src/astar.c src/tangents.c src/vgraph.c
 
 CC=gcc
-CFLAGS=-std=gnu99 -lm
+CFLAGS=-std=c99 -lm
 TESTFLAGS=-O0 -ggdb -Wall -Wextra
 PERFFLAGS=-O3 -march=native
 

@@ -7,6 +7,9 @@ Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacl
   graph_add(g, start);
   graph_add(g, goal);
 
+  if(!tangent_is_blocked(start,goal,obstacles)) {
+    graph_connect(g,start,goal,distance_metric(start,goal));
+  }
 
   CircularObstacle *tmp_obstacle = NULL;
   DList *out = NULL;

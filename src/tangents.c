@@ -328,19 +328,6 @@ void _obstacle_connect_map_points(CircularObstacle *c, Graph *g, MapPoint *goal,
 
   _obstacle_sort_points(c, goal, heuristic);
 
-  // The following snippet connects every pair of nodes
-  // bidirectional
-  /* for(size_t ii = 0; ii < c->_num_map_points; ii++) { */
-  /*   void *first = darray_get(c->_map_points, ii); */
-  /*   void *second = darray_get(c->_map_points, (ii+1) % c->_num_map_points); */
-  /*  */
-  /*   double cost = _get_arc_length(c, first, second); */
-  /*   graph_connect(g, first, second, cost); */
-  /*   graph_connect(g, second, first, cost); */
-  /* } */
-
-  // Instead we could just make the connection in the
-  // direction that takes us closer to the goal
   for(size_t ii = 0; ii < c->_num_map_points; ii++) {
     void *first = darray_get(c->_map_points, ii);
     void *second = darray_get(c->_map_points, (ii+1) % c->_num_map_points);
@@ -409,8 +396,11 @@ void _obstacle_connect_with_intermediate(CircularObstacle *c, Graph *g, MapPoint
       intermediates[ii]->x = r * cos(first_angle + ii * d_angle) + x0;
       intermediates[ii]->y = r * sin(first_angle + ii * d_angle) + y0;
       graph_add(g,intermediates[ii]);
-      graph_connect(g, intermediates[ii-1], intermediates[ii], cost);
-      graph_connect(g, intermediates[ii], intermediates[ii-1], cost);
+      if(heuristic(goal, intermediates[ii]) < heuristic(goal, intermediates[ii-1])) {
+        graph_connect(g, intermediates[ii-1], intermediates[ii], cost);
+      } else {
+        graph_connect(g, intermediates[ii], intermediates[ii-1], cost);
+      }
     }
 
 #if NUM_INTERMEDIATES > 1
