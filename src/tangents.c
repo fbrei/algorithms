@@ -10,6 +10,7 @@
 #define NUM_INTERMEDIATES 3
 
 double _get_arc_length(CircularObstacle *c, void *first_point, void *second_point);
+void print_graph_node(void*);
 
 DList* tangent_circle_point_intersects(MapPoint *p, CircularObstacle *c) {
 
@@ -327,6 +328,19 @@ void _obstacle_connect_map_points(CircularObstacle *c, Graph *g, MapPoint *goal,
 
   _obstacle_sort_points(c, goal, heuristic);
 
+  // The following snippet connects every pair of nodes
+  // bidirectional
+  /* for(size_t ii = 0; ii < c->_num_map_points; ii++) { */
+  /*   void *first = darray_get(c->_map_points, ii); */
+  /*   void *second = darray_get(c->_map_points, (ii+1) % c->_num_map_points); */
+  /*  */
+  /*   double cost = _get_arc_length(c, first, second); */
+  /*   graph_connect(g, first, second, cost); */
+  /*   graph_connect(g, second, first, cost); */
+  /* } */
+
+  // Instead we could just make the connection in the
+  // direction that takes us closer to the goal
   for(size_t ii = 0; ii < c->_num_map_points; ii++) {
     void *first = darray_get(c->_map_points, ii);
     void *second = darray_get(c->_map_points, (ii+1) % c->_num_map_points);
@@ -419,7 +433,9 @@ void _obstacle_sort_points(CircularObstacle *c, MapPoint *goal, double (*heurist
     if(heuristic != NULL && goal != NULL) {
       m->h = heuristic((void*) goal, m);
     }
-    if(m->y < origin.y) m->score = 2.0 * M_PI * c->radius - (m->score);
+    if(m->y < c->position.y) {
+      m->score = 2.0 * M_PI * c->radius - m->score;
+    }
   }
 
   for(size_t ii = 0; ii < c->_num_map_points; ii++) {
@@ -442,9 +458,14 @@ double _get_arc_length(CircularObstacle *c, void *first_point, void *second_poin
 
   double dx = m1->x - m2->x;
   double dy = m1->y - m2->y;
+  double straight = sqrt(dx*dx + dy*dy);
 
-  double direct = sqrt(dx*dx + dy*dy);
-  double angle = 2 * asin(direct / (2.0 * c->radius));
+  double angle;
+  if(fabs(straight - 2.0 * c->radius) < 0.0001) {
+    angle = M_PI;
+  } else {
+    angle = 2 * asin(straight / (2.0 * c->radius));
+  }
 
-  return fabs(angle) * c->radius;
+  return angle * c->radius;
 }

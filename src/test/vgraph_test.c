@@ -23,8 +23,13 @@ double euclid_distance(void*, void*);
 void print_graph_node(void*);
 
 unsigned long hash(void *);
+int randint(int min, int max) {
+  return (int) (( (double) rand() ) / RAND_MAX * (max-min) + min);
+}
 
 int main() {
+
+  srand(time(0));
 
   // First we need to advertise the start and end location
   // for our path planning instance
@@ -41,17 +46,23 @@ int main() {
   DList *obstacles = dlist_init();
   CircularObstacle *c;
 
-  c = obstacle_init(8,1,2);
-  dlist_push(obstacles, c);
-
-  c = obstacle_init(2,0,2);
-  dlist_push(obstacles, c);
-
-  c = obstacle_init(-3,-5,2);
-  dlist_push(obstacles, c);
-
-  /* c = obstacle_init(3.5,-4.2,2); */
+  /* c = obstacle_init(randint(6,10),randint(-2,2),2); */
   /* dlist_push(obstacles, c); */
+
+  /* c = obstacle_init(randint(0,4),randint(-2,2),2); */
+  /* dlist_push(obstacles, c); */
+
+  /* c = obstacle_init(randint(-5,-1),randint(-7,-3),2); */
+  /* dlist_push(obstacles, c); */
+
+  c = obstacle_init(7,0,2);
+  dlist_push(obstacles, c);
+
+  c = obstacle_init(1,0,2);
+  dlist_push(obstacles, c);
+
+  c = obstacle_init(-4,-4,2);
+  dlist_push(obstacles, c);
 
   // We want to measure the execution time too
   clock_t t1, t2;
@@ -66,8 +77,16 @@ int main() {
 
   // Calculate the time taken in seconds
   double time_taken = ((double) t2 - t1) / CLOCKS_PER_SEC;
+  clock_t tdiff = t2 - t1;
+
+  if(p != NULL) {
+    fprintf(stderr, "%lu\n",tdiff);
+  } else {
+    fprintf(stderr,"999999\n");
+  }
 
   // And some statistics
+#if PRINT_FULL_GRAPH
   fprintf(stderr, "Time to find it: %gs (%luus)\n", time_taken, t2-t1);
   if(p != NULL) {
     fprintf(stderr, "Total cost: %g\n", p->total_dist);
@@ -84,7 +103,6 @@ int main() {
   }
 
 
-#if PRINT_FULL_GRAPH
   // This will be used by a python script to create a plot
   printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
   graph_print(g, print_graph_node);
@@ -132,5 +150,6 @@ unsigned long hash(void *n) {
 void print_graph_node(void* v) {
 
   MapPoint *m = (MapPoint*) v;
+  /* printf("(%g,%g) | %g", m->x, m->y,m->score); */
   printf("(%g,%g)", m->x, m->y);
 }
