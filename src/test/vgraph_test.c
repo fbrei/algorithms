@@ -7,7 +7,8 @@
 #include <time.h>
 #include <stdlib.h>
 
-#define PRINT_FULL_GRAPH 1
+#define PRINT_FULL_GRAPH 0
+#define TEST_RANDOM 1
 
 
 /**
@@ -46,15 +47,16 @@ int main() {
   DList *obstacles = dlist_init();
   CircularObstacle *c;
 
-  /* c = obstacle_init(randint(6,10),randint(-2,2),2); */
-  /* dlist_push(obstacles, c); */
+#if TEST_RANDOM == 1
+  c = obstacle_init(randint(6,10),randint(-2,2),2);
+  dlist_push(obstacles, c);
 
-  /* c = obstacle_init(randint(0,4),randint(-2,2),2); */
-  /* dlist_push(obstacles, c); */
+  c = obstacle_init(randint(0,4),randint(-2,2),2);
+  dlist_push(obstacles, c);
 
-  /* c = obstacle_init(randint(-5,-1),randint(-7,-3),2); */
-  /* dlist_push(obstacles, c); */
-
+  c = obstacle_init(randint(-5,-1),randint(-7,-3),2);
+  dlist_push(obstacles, c);
+#else
   c = obstacle_init(7,0,2);
   dlist_push(obstacles, c);
 
@@ -63,7 +65,7 @@ int main() {
 
   c = obstacle_init(-4,-4,2);
   dlist_push(obstacles, c);
-
+#endif
   // We want to measure the execution time too
   clock_t t1, t2;
 
