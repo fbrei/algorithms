@@ -324,7 +324,7 @@ void _obstacle_add_map_point(CircularObstacle *c, MapPoint *p) {
 
 }
 
-void _obstacle_connect_map_points(CircularObstacle *c, Graph *g, MapPoint *goal, double (*heuristic)(void*, void*)) {
+void _obstacle_connect_map_points(CircularObstacle *c, Graph *g, MapPoint *goal, double (*heuristic)(void*, void*), DList *other_obstacles) {
 
   _obstacle_sort_points(c, goal, heuristic);
 
@@ -410,6 +410,23 @@ void _obstacle_connect_with_intermediate(CircularObstacle *c, Graph *g, MapPoint
 
   }
 
+}
+
+void _obstacle_connect_directed_intermediates(CircularObstacle *c, Graph *g, MapPoint *goal, double (*heuristic)(void*, void*)) {
+  for(size_t ii = 0; ii < c->_num_map_points; ii++) {
+    MapPoint *current = (MapPoint*) darray_get(c->_map_points,ii);
+    for(size_t jj = 0; jj < c->_num_map_points; jj++) {
+      if(ii == jj) continue;
+      MapPoint *other = (MapPoint*) darray_get(c->_map_points,jj);
+      if(current->is_in == other->is_in) continue;
+
+      if(current->is_in == 0 && heuristic(current,goal) < heuristic(other,goal)) {
+        graph_connect(g,other,current,heuristic(other,current));
+      } else if(current->is_in == 1 && heuristic(current,goal) > heuristic(other,goal)) {
+        graph_connect(g,current,other,heuristic(other,current));
+      }
+    }
+  }
 }
 
 void _obstacle_sort_points(CircularObstacle *c, MapPoint *goal, double (*heuristic)(void*, void*)) {

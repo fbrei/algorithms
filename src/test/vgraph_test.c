@@ -7,9 +7,9 @@
 #include <time.h>
 #include <stdlib.h>
 
-#define PRINT_FULL_GRAPH 0
-#define TEST_RANDOM 1
-
+#define PRINT_FULL_GRAPH 1
+#define TEST_RANDOM 0
+#define RANDOM_OBST 2
 
 /**
  * Calculates the euclidian distance between two map points
@@ -35,12 +35,12 @@ int main() {
   // First we need to advertise the start and end location
   // for our path planning instance
   MapPoint *start = malloc(sizeof(MapPoint));
-  start->x = 14;
-  start->y = 8;
+  start->x = 50;
+  start->y = 50;
 
   MapPoint *goal = malloc(sizeof(MapPoint));
-  goal->x = -6;
-  goal->y = -8;
+  goal->x = -50;
+  goal->y = -50;
 
   // Next we create a list of round obstacles that
   // the agent should move around
@@ -48,23 +48,19 @@ int main() {
   CircularObstacle *c;
 
 #if TEST_RANDOM == 1
-  c = obstacle_init(randint(6,10),randint(-2,2),2);
-  dlist_push(obstacles, c);
-
-  c = obstacle_init(randint(0,4),randint(-2,2),2);
-  dlist_push(obstacles, c);
-
-  c = obstacle_init(randint(-5,-1),randint(-7,-3),2);
-  dlist_push(obstacles, c);
+  for(size_t ii = 0; ii < RANDOM_OBST; ii++) {
+    c = obstacle_init(randint(-48,48),randint(-48,48),9);
+    dlist_push(obstacles, c);
+  }
 #else
-  c = obstacle_init(7,0,2);
+  c = obstacle_init(5,0,9);
   dlist_push(obstacles, c);
+  /*  */
+  /* c = obstacle_init(2,-1,9); */
+  /* dlist_push(obstacles, c); */
 
-  c = obstacle_init(1,0,2);
-  dlist_push(obstacles, c);
-
-  c = obstacle_init(-4,-4,2);
-  dlist_push(obstacles, c);
+  /* c = obstacle_init(-4,-4,2); */
+  /* dlist_push(obstacles, c); */
 #endif
   // We want to measure the execution time too
   clock_t t1, t2;

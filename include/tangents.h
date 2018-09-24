@@ -26,6 +26,7 @@ typedef struct _MapPoint {
   double y;   /**< The y-coordinate */
   double score;
   double h;
+  short is_in; /**< Incoming (1) or outgoing point (0) */
 } MapPoint;
 
 
@@ -116,8 +117,9 @@ DList* tangent_circle_inner_intersects(CircularObstacle *c1, CircularObstacle *c
  */
 unsigned short tangent_is_blocked(MapPoint *p1, MapPoint *p2, DList *obstacles);
 
-void _obstacle_connect_map_points(CircularObstacle *c, Graph *g, MapPoint *goal, double (*heuristic)(void*, void*));
+void _obstacle_connect_map_points(CircularObstacle *c, Graph *g, MapPoint *goal, double (*heuristic)(void*, void*), DList *other_obstacles);
 void _obstacle_connect_with_intermediate(CircularObstacle *c, Graph *g, MapPoint *goal, double (*heuristic)(void*, void*));
+void _obstacle_connect_directed_intermediates(CircularObstacle *c, Graph *g, MapPoint *goal, double (*heuristic)(void*, void*));
 void _obstacle_sort_points(CircularObstacle *c, MapPoint *goal, double (*heuristic)(void*, void*));
 
 #endif /* end of include guard: TANGENTS_H_UJO8EG29 */

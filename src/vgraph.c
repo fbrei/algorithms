@@ -20,7 +20,11 @@ Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacl
     out = tangent_circle_point_intersects(start, tmp_obstacle);
     MapPoint *tmp_point = NULL;
     while((tmp_point = (MapPoint*) dlist_iterate(out, tmp_point)) != NULL) {
-      if(tangent_is_blocked(start, tmp_point, obstacles)) continue;
+      if(tangent_is_blocked(start, tmp_point, obstacles)) {
+        fprintf(stderr, "Doh!\n");
+        continue;
+      }
+      tmp_point->is_in = 1;
 
       _obstacle_add_map_point(tmp_obstacle, tmp_point);
       graph_add(g, tmp_point);
@@ -33,8 +37,10 @@ Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacl
     tmp_point = NULL;
     while((tmp_point = (MapPoint*) dlist_iterate(out, tmp_point)) != NULL) {
       if(tangent_is_blocked(goal, tmp_point, obstacles)) {
+        fprintf(stderr, "Doh!\n");
         continue;
       }
+      tmp_point->is_in = 0;
       _obstacle_add_map_point(tmp_obstacle, tmp_point);
       graph_add(g, tmp_point);
       graph_connect(g, tmp_point, goal, distance_metric(goal, tmp_point));
@@ -62,7 +68,16 @@ Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacl
 
         graph_add(g, first);
         graph_add(g, second);
-        graph_connect(g, second, first, distance_metric(first, second));
+        if(distance_metric(first,goal) < distance_metric(second,goal)) {
+          first->is_in = 1;
+          second->is_in = 0;
+          graph_connect(g, second, first, distance_metric(first, second));
+        } else {
+          first->is_in = 0;
+          second->is_in = 1;
+          graph_connect(g, first, second, distance_metric(first, second));
+        }
+
 
         _obstacle_add_map_point(tmp_obstacle, first);
         _obstacle_add_map_point(other_obstacle, second);
@@ -84,7 +99,15 @@ Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacl
 
         graph_add(g, first);
         graph_add(g, second);
-        graph_connect(g, second, first, distance_metric(first, second));
+        if(distance_metric(first,goal) < distance_metric(second,goal)) {
+          first->is_in = 1;
+          second->is_in = 0;
+          graph_connect(g, second, first, distance_metric(first, second));
+        } else {
+          first->is_in = 0;
+          second->is_in = 1;
+          graph_connect(g, first, second, distance_metric(first, second));
+        }
 
         _obstacle_add_map_point(tmp_obstacle, first);
         _obstacle_add_map_point(other_obstacle, second);
@@ -96,9 +119,10 @@ Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacl
   }
   void *tmp = NULL;
   while((tmp = dlist_iterate(obstacles, tmp)) != NULL) {
-    _obstacle_connect_map_points((CircularObstacle*) tmp, g, goal, distance_metric);
+    _obstacle_connect_map_points((CircularObstacle*) tmp, g, goal, distance_metric, obstacles);
     /* _obstacle_connect_map_points((CircularObstacle*) tmp, g, NULL, NULL); */
     /* _obstacle_connect_with_intermediate((CircularObstacle*) tmp, g, goal, distance_metric); */
+    /* _obstacle_connect_directed_intermediates((CircularObstacle*) tmp, g, goal, distance_metric); */
   }
 
   return g;
