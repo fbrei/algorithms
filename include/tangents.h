@@ -104,6 +104,18 @@ DList* tangent_circle_inner_intersects(CircularObstacle *c1, CircularObstacle *c
 
 
 /**
+ * \brief Calculates all intersection points of tangents between two circles
+ *
+ * Combination of both calls to inner and outer intersects, returns one combinded
+ * list where pairs of map points consist of source and target
+ * 
+ * \param *c1 The originating obstace
+ * \param *c2 The target obstacle
+ * \return DList containing all start and end points of tangents
+ */
+DList* tangent_circle_intersects(CircularObstacle *c1, CircularObstacle *c2);
+
+/**
  * \brief Calculates if the path between two points is blocked
  * by an obstacle
  *
@@ -117,6 +129,7 @@ DList* tangent_circle_inner_intersects(CircularObstacle *c1, CircularObstacle *c
  */
 unsigned short tangent_is_blocked(MapPoint *p1, MapPoint *p2, DList *obstacles);
 
+CircularObstacle* tangent_get_first_blocking(MapPoint *from, MapPoint *to, DList *obstacles, double (*distance)(void*,void*));
 void _obstacle_connect_map_points(CircularObstacle *c, Graph *g, MapPoint *goal, double (*heuristic)(void*, void*), DList *other_obstacles);
 void _obstacle_connect_with_intermediate(CircularObstacle *c, Graph *g, MapPoint *goal, double (*heuristic)(void*, void*));
 void _obstacle_connect_directed_intermediates(CircularObstacle *c, Graph *g, MapPoint *goal, double (*heuristic)(void*, void*));

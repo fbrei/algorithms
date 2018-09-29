@@ -254,6 +254,19 @@ DList* tangent_circle_inner_intersects(CircularObstacle *c1, CircularObstacle *c
   return NULL;
 }
 
+DList* tangent_circle_intersects(CircularObstacle *c1, CircularObstacle *c2) {
+  DList *total = tangent_circle_outer_intersects(c1,c2);
+  DList *second = tangent_circle_inner_intersects(c1,c2);
+
+  MapPoint *tmp = NULL;
+  while((tmp = dlist_iterate(second, tmp)) != NULL) {
+    dlist_push(total,tmp);
+  }
+  dlist_destroy(second, NULL);
+
+  return total;
+}
+
 unsigned short tangent_is_blocked(MapPoint *p1, MapPoint *p2, DList *obstacles) {
 
   void *tmp = NULL;
@@ -411,20 +424,88 @@ void _obstacle_connect_with_intermediate(CircularObstacle *c, Graph *g, MapPoint
   }
 
 }
+CircularObstacle* tangent_get_first_blocking(MapPoint *from, MapPoint *to, DList *obstacles, double (*distance)(void*,void*)) {
+
+  CircularObstacle *closest_obstacle = NULL;
+  double closest_dist = 999999;
+
+  void *tmp = NULL;
+  while((tmp = dlist_iterate(obstacles, tmp)) != NULL) {
+    CircularObstacle *co = (CircularObstacle*) tmp;
+    MapPoint *po = &(co->position);
+
+    double x = co->position.x;
+    double y = co->position.y;
+
+    double r = 0.99 * co->radius;
+
+    double m = (from->y - to->y) / (from->x - to->x);
+    double n = -from->x * m + from->y;
+
+    double p = (2.0 * (m*n - x - m * y)) / (m * m + 1);
+    double q = (n*n + x * x + y * y - 2 * n * y - r * r) / (m * m + 1);
+
+    if( (p*p)/4 > q ) {
+
+      double min_x = (from->x < to->x) ? from->x : to->x;
+      double min_y = (from->y < to->y) ? from->y : to->y;
+
+      double max_x = (from->x < to->x) ? to->x : from->x;
+      double max_y = (from->y < to->y) ? to->y : from->y;
+
+      double sqrt_q = sqrt( (p*p)/4.0 - q  );
+
+      double x1 = -p / 2.0 + sqrt_q, y1 = m * x1 + n;
+      double x2 = -p / 2.0 + sqrt_q, y2 = m * x2 + n;
+
+      if( (x1 > min_x && x1 < max_x && y1 > min_y && y1 < max_y) || (x2 > min_x && x2 < max_x && y2 > min_y && y2 < max_y) ) {
+        double new_dist = distance(po, from);
+        if(new_dist < closest_dist) {
+          closest_dist = new_dist;
+          closest_obstacle = co;
+        }
+      } 
+
+    }
+  }
+
+  return closest_obstacle;
+}
 
 void _obstacle_connect_directed_intermediates(CircularObstacle *c, Graph *g, MapPoint *goal, double (*heuristic)(void*, void*)) {
+
+  _obstacle_sort_points(c, goal, heuristic);
+
   for(size_t ii = 0; ii < c->_num_map_points; ii++) {
     MapPoint *current = (MapPoint*) darray_get(c->_map_points,ii);
+    if(current->is_in == 0) continue;
+    double score_cw, score_ccw;
+    MapPoint *best_cw, *best_ccw;
+
+    // Find closest exit in counter-clockwise direction
     for(size_t jj = 0; jj < c->_num_map_points; jj++) {
       if(ii == jj) continue;
       MapPoint *other = (MapPoint*) darray_get(c->_map_points,jj);
-      if(current->is_in == other->is_in) continue;
+      if(other->is_in == 1) continue;
+      score_ccw = fabs(_get_arc_length(c, current, other));
+      best_ccw = other;
+      break;
+    }
 
-      if(current->is_in == 0 && heuristic(current,goal) < heuristic(other,goal)) {
-        graph_connect(g,other,current,heuristic(other,current));
-      } else if(current->is_in == 1 && heuristic(current,goal) > heuristic(other,goal)) {
-        graph_connect(g,current,other,heuristic(other,current));
-      }
+    // Find closest exit in clockwise direction
+    for(size_t jj = c->_num_map_points-1; jj >= 0; jj--) {
+      if(ii == jj) continue;
+      MapPoint *other = (MapPoint*) darray_get(c->_map_points,jj);
+      if(other->is_in == 1) continue;
+      score_cw = fabs(_get_arc_length(c, current, other));
+      best_cw = other;
+      break;
+    }
+
+    if(score_cw < score_ccw) {
+      graph_connect(g, current, best_cw, score_cw);
+    } else {
+      graph_connect(g, current, best_ccw, score_ccw);
     }
   }
 }

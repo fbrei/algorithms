@@ -9,7 +9,7 @@
 
 #define PRINT_FULL_GRAPH 1
 #define TEST_RANDOM 0
-#define RANDOM_OBST 2
+#define RANDOM_OBST 50
 
 /**
  * Calculates the euclidian distance between two map points
@@ -30,6 +30,7 @@ int randint(int min, int max) {
 
 int main() {
 
+
   srand(time(0));
 
   // First we need to advertise the start and end location
@@ -44,37 +45,53 @@ int main() {
 
   // Next we create a list of round obstacles that
   // the agent should move around
-  DList *obstacles = dlist_init();
+  DList *obstacles = dlist_init(), *work_obstacles = dlist_init();
   CircularObstacle *c;
 
 #if TEST_RANDOM == 1
   for(size_t ii = 0; ii < RANDOM_OBST; ii++) {
-    c = obstacle_init(randint(-48,48),randint(-48,48),9);
+    c = obstacle_init(randint(-48,48),randint(-48,48),6);
     dlist_push(obstacles, c);
   }
 #else
-  c = obstacle_init(5,0,9);
+  c = obstacle_init(-20,-15,9);
   dlist_push(obstacles, c);
-  /*  */
-  /* c = obstacle_init(2,-1,9); */
-  /* dlist_push(obstacles, c); */
+  dlist_push(work_obstacles, c);
 
-  /* c = obstacle_init(-4,-4,2); */
-  /* dlist_push(obstacles, c); */
+  c = obstacle_init(25,14,9);
+  dlist_push(obstacles, c);
+  dlist_push(work_obstacles, c);
+
+  c = obstacle_init(29,-10,9);
+  dlist_push(obstacles, c);
+  dlist_push(work_obstacles, c);
+
+  c = obstacle_init(-17,34,9);
+  dlist_push(obstacles, c);
+  dlist_push(work_obstacles, c);
+
+  c = obstacle_init(-37,4,9);
+  dlist_push(obstacles, c);
+  dlist_push(work_obstacles, c);
+
+  c = obstacle_init(7,-32,9);
+  dlist_push(obstacles, c);
+  dlist_push(work_obstacles, c);
 #endif
   // We want to measure the execution time too
-  clock_t t1, t2;
+  clock_t t1, t2, t_inter;
 
   // This is where the actual magic happens. In this case we use the
   // euclidian distance both to connect the vertices in the graph and
   // to estimate the remaining distance to the goal.
   t1 = clock();
-  Graph *g = vgraph_circular_obstacles(start, goal, obstacles, euclid_distance);
+  Graph *g = vgraph_circular_obstacles(start, goal, work_obstacles, euclid_distance);
+  t_inter = clock();
   AStarPathNode *p = astar(g, start, goal, euclid_distance, hash);
   t2 = clock();
 
   // Calculate the time taken in seconds
-  double time_taken = ((double) t2 - t1) / CLOCKS_PER_SEC;
+  double time_taken = ((double) t2 - t1) / CLOCKS_PER_SEC, time_;
   clock_t tdiff = t2 - t1;
 
   if(p != NULL) {
@@ -86,6 +103,7 @@ int main() {
   // And some statistics
 #if PRINT_FULL_GRAPH
   fprintf(stderr, "Time to find it: %gs (%luus)\n", time_taken, t2-t1);
+  fprintf(stderr, "%lu - %lu\n", t_inter - t1, t2 - t_inter);
   if(p != NULL) {
     fprintf(stderr, "Total cost: %g\n", p->total_dist);
   } else {
