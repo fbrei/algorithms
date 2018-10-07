@@ -9,7 +9,7 @@
 
 #define PRINT_FULL_GRAPH 1
 #define TEST_RANDOM 0
-#define RANDOM_OBST 50
+#define RANDOM_OBST 20
 
 /**
  * Calculates the euclidian distance between two map points
@@ -26,6 +26,39 @@ void print_graph_node(void*);
 unsigned long hash(void *);
 int randint(int min, int max) {
   return (int) (( (double) rand() ) / RAND_MAX * (max-min) + min);
+}
+
+void add_random_obstacle(DList *obstacles, DList *work_obstacles, MapPoint *goal, MapPoint *start) {
+
+  unsigned int num_tries = 0;
+  while(num_tries < 50) {
+    CircularObstacle *c = obstacle_init(randint(-48,48),randint(-48,48),6);
+
+    CircularObstacle *o = NULL;
+
+    int non_overlapping = 1;
+    if(euclid_distance(&(c->position), start) < 6) {
+      non_overlapping = 0;
+    }
+    if(euclid_distance(&(c->position), goal) < 6) {
+      non_overlapping = 0;
+    }
+    while((o = dlist_iterate(obstacles,o)) != NULL) {
+      if(euclid_distance(&(c->position), &(o->position)) < 12) {
+        non_overlapping = 0;
+        break;
+      }
+    }
+
+    if(non_overlapping) {
+      dlist_push(obstacles, c);
+      dlist_push(work_obstacles, c);
+      return;
+    } else {
+      num_tries++;
+      obstacle_destroy(c);
+    }
+  }
 }
 
 int main() {
@@ -50,15 +83,14 @@ int main() {
 
 #if TEST_RANDOM == 1
   for(size_t ii = 0; ii < RANDOM_OBST; ii++) {
-    c = obstacle_init(randint(-48,48),randint(-48,48),6);
-    dlist_push(obstacles, c);
+    add_random_obstacle(obstacles, work_obstacles, start, goal);
   }
 #else
   c = obstacle_init(-20,-15,9);
   dlist_push(obstacles, c);
   dlist_push(work_obstacles, c);
 
-  c = obstacle_init(25,14,9);
+  c = obstacle_init(22,22,9);
   dlist_push(obstacles, c);
   dlist_push(work_obstacles, c);
 
@@ -66,7 +98,7 @@ int main() {
   dlist_push(obstacles, c);
   dlist_push(work_obstacles, c);
 
-  c = obstacle_init(-17,34,9);
+  c = obstacle_init(25,44,9);
   dlist_push(obstacles, c);
   dlist_push(work_obstacles, c);
 

@@ -11,7 +11,7 @@ unsigned int equals(void *a, void *b) {
 
 Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacles, double (*distance_metric)(void*, void*)) {
 
-  const unsigned int DYNAMIC = 0;
+  const unsigned int DYNAMIC = 1;
 
   Graph *g = graph_init(GRAPH_DIRECTED);
   graph_add(g, start);
@@ -28,9 +28,12 @@ Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacl
       MapPoint *tmp_point = NULL;
       for(size_t idx = 0; idx < out->num_items; idx++) {
         tmp_point = darray_get(out->data, idx);
-        graph_add(g, tmp_point);
-        graph_connect(g, start, tmp_point, distance_metric(start, tmp_point));
-        _obstacle_add_map_point(co, tmp_point);
+        if(!tangent_is_blocked(start, tmp_point, obstacles)) {
+          tmp_point->is_in = 1;
+          graph_add(g, tmp_point);
+          graph_connect(g, start, tmp_point, distance_metric(start, tmp_point));
+          _obstacle_add_map_point(co, tmp_point);
+        }
       }
 
       PrQueue *open_obstacles = prqueue_init(compare_to);
@@ -61,12 +64,16 @@ Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacl
               if(source == NULL) { break; }
               target = dlist_iterate(intersections, source);
 
-              _obstacle_add_map_point(current,source);
-              _obstacle_add_map_point(blocking,target);
+              if(!tangent_is_blocked(source,target,obstacles)) {
+                source->is_in = 0;
+                target->is_in = 1;
+                _obstacle_add_map_point(current,source);
+                _obstacle_add_map_point(blocking,target);
 
-              graph_add(g,source);
-              graph_add(g,target);
-              graph_connect(g,source,target,distance_metric(source,target));
+                graph_add(g,source);
+                graph_add(g,target);
+                graph_connect(g,source,target,distance_metric(source,target));
+              }
             }
           }
         }
@@ -185,12 +192,13 @@ Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacl
 
     }
   }
+
   void *tmp = NULL;
   while((tmp = dlist_iterate(obstacles, tmp)) != NULL) {
-    _obstacle_connect_map_points((CircularObstacle*) tmp, g, goal, distance_metric, obstacles);
+    /* _obstacle_connect_map_points((CircularObstacle*) tmp, g, goal, distance_metric, obstacles); */
     /* _obstacle_connect_map_points((CircularObstacle*) tmp, g, NULL, NULL, obstacles); */
     /* _obstacle_connect_with_intermediate((CircularObstacle*) tmp, g, goal, distance_metric); */
-    /* _obstacle_connect_directed_intermediates((CircularObstacle*) tmp, g, goal, distance_metric); */
+    _obstacle_connect_directed_intermediates((CircularObstacle*) tmp, g, goal, distance_metric);
   }
 
 
