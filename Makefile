@@ -21,6 +21,7 @@ tangent_test:
 
 vgraph_test:
 	$(CC) $(CFLAGS) $(TESTFLAGS) $(DTYPESSRC) $(ALGOSRC) src/test/vgraph_test.c -I. -I$(DTYPESDIR) -o bin/vgraph_test
+	$(MEMTEST) bin/vgraph_test
 
 vgraph_perf_test:
 	$(CC) $(CFLAGS) $(PERFFLAGS) $(DTYPESSRC) $(ALGOSRC) src/test/vgraph_test.c -I. -I$(DTYPESDIR) -o bin/vgraph_test

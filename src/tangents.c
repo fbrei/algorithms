@@ -1,4 +1,5 @@
 #include "include/tangents.h"
+#include "include/globals.h"
 
 #include <stdio.h>
 #include <math.h>
@@ -339,6 +340,7 @@ void _obstacle_add_map_point(CircularObstacle *c, MapPoint *p) {
 
 void _obstacle_connect_map_points(CircularObstacle *c, Graph *g, MapPoint *goal, double (*heuristic)(void*, void*), DList *other_obstacles) {
 
+  (void) other_obstacles;
   _obstacle_sort_points(c, goal, heuristic);
 
   for(size_t ii = 0; ii < c->_num_map_points; ii++) {
@@ -381,7 +383,6 @@ void _obstacle_connect_with_intermediate(CircularObstacle *c, Graph *g, MapPoint
       anglediff = 2.0 * M_PI - anglediff;
     }
     double d_angle = anglediff / (NUM_INTERMEDIATES + 1);
-    double new_angle = first_angle + anglediff / 2.0;
 
     MapPoint ** intermediates = malloc(NUM_INTERMEDIATES * sizeof(MapPoint*));
     intermediates[0] = malloc(sizeof(MapPoint));
@@ -424,7 +425,7 @@ void _obstacle_connect_with_intermediate(CircularObstacle *c, Graph *g, MapPoint
   }
 
 }
-CircularObstacle* tangent_get_first_blocking(MapPoint *from, MapPoint *to, DList *obstacles, double (*distance)(void*,void*)) {
+CircularObstacle* tangent_get_first_blocking(MapPoint *from, MapPoint *to, DList *obstacles, void *self, double (*distance)(void*,void*)) {
 
   CircularObstacle *closest_obstacle = NULL;
   double closest_dist = 999999;
@@ -432,6 +433,10 @@ CircularObstacle* tangent_get_first_blocking(MapPoint *from, MapPoint *to, DList
   void *tmp = NULL;
   while((tmp = dlist_iterate(obstacles, tmp)) != NULL) {
     CircularObstacle *co = (CircularObstacle*) tmp;
+    if(tmp == self) {
+      continue;
+    }
+
     MapPoint *po = &(co->position);
 
     double x = co->position.x;
@@ -482,7 +487,7 @@ void _obstacle_connect_directed_intermediates(CircularObstacle *c, Graph *g, Map
 
   _obstacle_sort_points(c, goal, heuristic);
 
-  for(long ii = 0; ii < c->_num_map_points; ii++) {
+  for(size_t ii = 0; ii < c->_num_map_points; ii++) {
     MapPoint *current = (MapPoint*) darray_get(c->_map_points,ii);
     if(current->is_in == 0) continue;
     double score_cw, score_ccw;
@@ -499,7 +504,7 @@ void _obstacle_connect_directed_intermediates(CircularObstacle *c, Graph *g, Map
     }
 
     // Find closest exit in clockwise direction
-    for(long jj = (ii-1) % num_nodes; jj < c->_num_map_points; jj = jj-1 < 0 ? num_nodes - 1 : jj-1 )  {
+    for(size_t jj = (ii == 0) ? num_nodes - 1 : ii - 1; jj < c->_num_map_points; jj = (jj == 0) ? num_nodes - 1 : jj-1 )  {
       if(ii == jj) continue;
       MapPoint *other = (MapPoint*) darray_get(c->_map_points,jj);
       if(other->is_in == 1) continue;

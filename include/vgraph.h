@@ -33,7 +33,8 @@
 Graph* vgraph_circular_obstacles(MapPoint *start, 
     MapPoint *goal, 
     DList *obstacles,
-    double (*distance_metric)(void*, void*));
+    double (*distance_metric)(void*, void*),
+    const int dynamic);
 
 
 #endif /* end of include guard: VGRAPH_H_AWDEVYPA */
