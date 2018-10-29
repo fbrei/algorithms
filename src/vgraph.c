@@ -2,7 +2,7 @@
 #include "include/globals.h"
 #include <stdio.h>
 
-#define PRINTDEBUG 0
+#define PRINTDEBUG 1
 
 int compare_to(void* a,void* b) {
   UNUSED(a);
@@ -17,6 +17,11 @@ unsigned int equals(void *a, void *b) {
 void print_obstacle(FILE *stream, void *o) {
   CircularObstacle *c = (CircularObstacle*) o;
   fprintf(stream, "(%g,%g,%g)", c->position.x, c->position.y, c->radius);
+}
+
+void print_map_point(FILE *stream, void *o) {
+  MapPoint *c = (MapPoint*) o;
+  fprintf(stream, "(%g,%g)", c->x, c->y);
 }
 
 unsigned long obstacle_hash(void *v) {
@@ -94,7 +99,7 @@ Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacl
     }
   } else if(DYNAMIC == 2) {
 
-    CircularObstacle *co = tangent_get_first_blocking(start, goal, obstacles, NULL, distance_metric);
+    DList *co = tangent_get_blocking(start, goal, obstacles, NULL);
     PrQueue *local, *front;
     HSet *expanded, *local_expanded;
 
@@ -112,7 +117,11 @@ Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacl
       graph_connect(g,start,goal,distance_metric(start,goal));
     } else {
 
-      CircularObstacle *current;
+      CircularObstacle *current = NULL;
+      while((current = (CircularObstacle*) dlist_iterate(co, current)) != NULL) {
+        prqueue_add(local, current);
+      }
+
       while((current = (CircularObstacle*) prqueue_pop(local)) != NULL) {
 
         prqueue_add(front, current);
@@ -120,17 +129,20 @@ Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacl
         MapPoint *tmp_point = NULL;
         for(size_t idx = 0; idx < out->num_items; idx++) {
           tmp_point = darray_get(out->data, idx);
-          CircularObstacle *blocking = tangent_get_first_blocking(start, tmp_point, obstacles, NULL, distance_metric);
+          DList *blocking = tangent_get_blocking(start, tmp_point, obstacles, NULL);
           if(blocking == NULL) {
             _obstacle_add_map_point(current,tmp_point);
             tmp_point->is_in = 1;
             graph_add(g,tmp_point);
             graph_connect(g,start,tmp_point,distance_metric(tmp_point, start));
           } else {
-            if(!prqueue_contains(local, blocking)) {
-              prqueue_add(local, blocking);
-            }
             free(tmp_point);
+            CircularObstacle *tmp_obstacle = NULL;
+            while((tmp_obstacle = dlist_iterate(blocking, tmp_obstacle))) {
+              if(!prqueue_contains(local,tmp_obstacle)) {
+                prqueue_add(local, tmp_obstacle);
+              }
+            }
           }
         }
         dlist_destroy(out,NULL);
@@ -159,17 +171,20 @@ Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacl
       DList *out = tangent_circle_point_intersects(goal, current);
       for(size_t idx = 0; idx < out->num_items; idx++) {
         MapPoint *tmp_point = darray_get(out->data, idx);
-        CircularObstacle *blocking = tangent_get_first_blocking(tmp_point, goal, obstacles, current, distance_metric);
+        DList *blocking = tangent_get_blocking(tmp_point, goal, obstacles, current);
         if(blocking == NULL) {
           graph_add(g, tmp_point);
           tmp_point->is_in = 0;
           _obstacle_add_map_point(current,tmp_point);
           graph_connect(g,tmp_point,goal,distance_metric(goal,tmp_point));
         } else {
-          if(!prqueue_contains(local,blocking)) {
-            prqueue_add(local, blocking);
-          }
           free(tmp_point);
+          CircularObstacle *tmp_obstacle = NULL;
+          while((tmp_obstacle = dlist_iterate(blocking, tmp_obstacle))) {
+            if(!prqueue_contains(local,tmp_obstacle)) {
+              prqueue_add(local, tmp_obstacle);
+            }
+          }
         }
       }
       dlist_destroy(out,NULL);
@@ -206,6 +221,13 @@ Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacl
             _obstacle_add_map_point(blocking,to);
             from->is_in = 0;
             to->is_in = 1;
+#if PRINTDEBUG == 1
+            fprintf(stderr, "...... adding connection ");
+            print_map_point(stderr, from);
+            fprintf(stderr, " -> ");
+            print_map_point(stderr, to);
+            fprintf(stderr, "\n");
+#endif
 
             graph_add(g,from);
             graph_add(g,to);

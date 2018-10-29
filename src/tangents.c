@@ -477,6 +477,55 @@ CircularObstacle* tangent_get_first_blocking(MapPoint *from, MapPoint *to, DList
   return closest_obstacle;
 }
 
+DList* tangent_get_blocking(MapPoint *from, MapPoint *to, DList *obstacles, void *self) {
+
+  void *tmp = NULL;
+  DList* results = NULL;
+  while((tmp = dlist_iterate(obstacles, tmp)) != NULL) {
+    CircularObstacle *co = (CircularObstacle*) tmp;
+    if(tmp == self) {
+      continue;
+    }
+
+    MapPoint *po = &(co->position);
+
+    double x = co->position.x;
+    double y = co->position.y;
+
+    double r = 0.99 * co->radius;
+
+    double m = (from->y - to->y) / (from->x - to->x);
+    double n = -from->x * m + from->y;
+
+    double p = (2.0 * (m*n - x - m * y)) / (m * m + 1);
+    double q = (n*n + x * x + y * y - 2 * n * y - r * r) / (m * m + 1);
+
+    if( (p*p)/4 > q ) {
+
+      double min_x = (from->x < to->x) ? from->x : to->x;
+      double min_y = (from->y < to->y) ? from->y : to->y;
+
+      double max_x = (from->x < to->x) ? to->x : from->x;
+      double max_y = (from->y < to->y) ? to->y : from->y;
+
+      double sqrt_q = sqrt( (p*p)/4.0 - q  );
+
+      double x1 = -p / 2.0 + sqrt_q, y1 = m * x1 + n;
+      double x2 = -p / 2.0 + sqrt_q, y2 = m * x2 + n;
+
+      if( (x1 > min_x && x1 < max_x && y1 > min_y && y1 < max_y) || (x2 > min_x && x2 < max_x && y2 > min_y && y2 < max_y) ) {
+        if(results == NULL) {
+          results = dlist_init();
+        }
+        dlist_push(results, tmp);
+      } 
+
+    }
+  }
+
+  return results;
+}
+
 void _obstacle_connect_directed_intermediates(CircularObstacle *c, Graph *g, MapPoint *goal, double (*heuristic)(void*, void*)) {
 
   size_t num_nodes = c->_map_points->num_items;

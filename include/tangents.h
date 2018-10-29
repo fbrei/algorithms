@@ -130,6 +130,7 @@ DList* tangent_circle_intersects(CircularObstacle *c1, CircularObstacle *c2);
 unsigned short tangent_is_blocked(MapPoint *p1, MapPoint *p2, DList *obstacles);
 
 CircularObstacle* tangent_get_first_blocking(MapPoint *from, MapPoint *to, DList *obstacles, void *self, double (*distance)(void*,void*));
+DList* tangent_get_blocking(MapPoint *from, MapPoint *to, DList *obstacles, void *self);
 void _obstacle_connect_map_points(CircularObstacle *c, Graph *g, MapPoint *goal, double (*heuristic)(void*, void*), DList *other_obstacles);
 void _obstacle_connect_with_intermediate(CircularObstacle *c, Graph *g, MapPoint *goal, double (*heuristic)(void*, void*));
 void _obstacle_connect_directed_intermediates(CircularObstacle *c, Graph *g, MapPoint *goal, double (*heuristic)(void*, void*));

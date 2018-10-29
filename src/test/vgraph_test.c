@@ -7,10 +7,10 @@
 #include <time.h>
 #include <stdlib.h>
 
-#define PRINT_FULL_GRAPH 1
+#define PRINT_FULL_GRAPH 0
 #define TEST_RANDOM 0
 #define RANDOM_OBST 20
-#define TEST_SET 2
+#define TEST_SET 4
 #define BOTH_METHODS 0
 
 /**
@@ -179,9 +179,91 @@ int main() {
   dlist_push(obstacles,c);
   dlist_push(work_obstacles,c);
 
+#elif TEST_SET == 4
+  c = obstacle_init(-39,10,6);
+  dlist_push(obstacles,c);
+  dlist_push(work_obstacles, c);
+
+  c = obstacle_init(-5,21,6);
+  dlist_push(obstacles,c);
+  dlist_push(work_obstacles, c);
+
+  c = obstacle_init(28,20,6);
+  dlist_push(obstacles,c);
+  dlist_push(work_obstacles, c);
+
+  c = obstacle_init(16,-30,6);
+  dlist_push(obstacles,c);
+  dlist_push(work_obstacles, c);
+
+  c = obstacle_init(-12,0,6);
+  dlist_push(obstacles,c);
+  dlist_push(work_obstacles, c);
+
+  c = obstacle_init(30,-32,6);
+  dlist_push(obstacles,c);
+  dlist_push(work_obstacles, c);
+
+  c = obstacle_init(-22,-10,6);
+  dlist_push(obstacles,c);
+  dlist_push(work_obstacles, c);
+
+  c = obstacle_init(7,-10,6);
+  dlist_push(obstacles,c);
+  dlist_push(work_obstacles, c);
+
+  c = obstacle_init(-31,26,6);
+  dlist_push(obstacles,c);
+  dlist_push(work_obstacles, c);
+
+  c = obstacle_init(11,8,6);
+  dlist_push(obstacles,c);
+  dlist_push(work_obstacles, c);
+
+  c = obstacle_init(34,-46,6);
+  dlist_push(obstacles,c);
+  dlist_push(work_obstacles, c);
+
+  c = obstacle_init(33,-8,6);
+  dlist_push(obstacles,c);
+  dlist_push(work_obstacles, c);
+
+  c = obstacle_init(-2,38,6);
+  dlist_push(obstacles,c);
+  dlist_push(work_obstacles, c);
+
+  c = obstacle_init(18,33,6);
+  dlist_push(obstacles,c);
+  dlist_push(work_obstacles, c);
+
+  c = obstacle_init(-25,-27,6);
+  dlist_push(obstacles,c);
+  dlist_push(work_obstacles, c);
+
+  c = obstacle_init(10,44,6);
+  dlist_push(obstacles,c);
+  dlist_push(work_obstacles, c);
+
+  c = obstacle_init(-8,-28,6);
+  dlist_push(obstacles,c);
+  dlist_push(work_obstacles, c);
+
+  c = obstacle_init(-15,-45,6);
+  dlist_push(obstacles,c);
+  dlist_push(work_obstacles, c);
+
+  c = obstacle_init(33,6,6);
+  dlist_push(obstacles,c);
+  dlist_push(work_obstacles, c);
+
+  c = obstacle_init(45,-40,6);
+  dlist_push(obstacles,c);
+  dlist_push(work_obstacles, c);
+
 #endif
 
 #endif
+
   // We want to measure the execution time too
   clock_t t1, t2, t_inter;
 
