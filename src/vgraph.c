@@ -99,7 +99,7 @@ Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacl
     }
   } else if(DYNAMIC == 2) {
 
-    DList *co = tangent_get_blocking(start, goal, obstacles, NULL);
+    CircularObstacle *co = tangent_get_first_blocking(start, goal, obstacles, NULL, distance_metric);
     PrQueue *local, *front;
     HSet *expanded, *local_expanded;
 
@@ -117,13 +117,10 @@ Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacl
       graph_connect(g,start,goal,distance_metric(start,goal));
     } else {
 
+      prqueue_add(local,co);
+
       CircularObstacle *current = NULL;
-      while((current = (CircularObstacle*) dlist_iterate(co, current)) != NULL) {
-        prqueue_add(local, current);
-      }
-
       while((current = (CircularObstacle*) prqueue_pop(local)) != NULL) {
-
         prqueue_add(front, current);
         DList *out = tangent_circle_point_intersects(start, current);
         MapPoint *tmp_point = NULL;
@@ -139,9 +136,7 @@ Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacl
             free(tmp_point);
             CircularObstacle *tmp_obstacle = NULL;
             while((tmp_obstacle = dlist_iterate(blocking, tmp_obstacle))) {
-              if(!prqueue_contains(local,tmp_obstacle)) {
-                prqueue_add(local, tmp_obstacle);
-              }
+              prqueue_add(local, tmp_obstacle);
             }
           }
         }

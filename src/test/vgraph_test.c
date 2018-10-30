@@ -7,7 +7,7 @@
 #include <time.h>
 #include <stdlib.h>
 
-#define PRINT_FULL_GRAPH 0
+#define PRINT_FULL_GRAPH 1
 #define TEST_RANDOM 0
 #define RANDOM_OBST 20
 #define TEST_SET 4
