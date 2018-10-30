@@ -99,7 +99,7 @@ Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacl
     }
   } else if(DYNAMIC == 2) {
 
-    CircularObstacle *co = tangent_get_first_blocking(start, goal, obstacles, NULL, distance_metric);
+    DList *co = tangent_get_blocking(start, goal, obstacles, NULL);
     PrQueue *local, *front;
     HSet *expanded, *local_expanded;
 
@@ -117,11 +117,29 @@ Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacl
       graph_connect(g,start,goal,distance_metric(start,goal));
     } else {
 
-      prqueue_add(local,co);
+      for(size_t idx = 0; idx < co->num_items; idx++) {
+#if PRINTDEBUG == 1
+      fprintf(stderr, "Initializing with %p : ", darray_get(co->data,idx));
+      print_obstacle(stderr, darray_get(co->data,idx));
+      fprintf(stderr, "\n");
+#endif
+        prqueue_add(local, darray_get(co->data,idx));
+      }
 
       CircularObstacle *current = NULL;
+      local_expanded = hset_init(obstacle_hash,equals);
       while((current = (CircularObstacle*) prqueue_pop(local)) != NULL) {
-        prqueue_add(front, current);
+
+        if(hset_contains(local_expanded, current) != -1) {
+          continue;
+        }
+
+        hset_add(local_expanded, current);
+
+        if(!prqueue_contains(front, current)) {
+          prqueue_add(front, current);
+        }
+
         DList *out = tangent_circle_point_intersects(start, current);
         MapPoint *tmp_point = NULL;
         for(size_t idx = 0; idx < out->num_items; idx++) {
@@ -135,13 +153,22 @@ Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacl
           } else {
             free(tmp_point);
             CircularObstacle *tmp_obstacle = NULL;
-            while((tmp_obstacle = dlist_iterate(blocking, tmp_obstacle))) {
-              prqueue_add(local, tmp_obstacle);
+            for(size_t idx = 0; idx < blocking->num_items; idx++) {
+              if(!prqueue_contains(local, tmp_obstacle)) {
+                prqueue_add(local, tmp_obstacle);
+#if PRINTDEBUG == 1
+                fprintf(stderr, "...... adding %p : ", darray_get(blocking->data,idx));
+                print_obstacle(stderr, darray_get(blocking->data,idx));
+                fprintf(stderr, "\n");
+#endif
+              }
             }
           }
+          dlist_destroy(blocking, NULL);
         }
         dlist_destroy(out,NULL);
       }
+      hset_destroy(local_expanded, NULL);
     }
 
     // The front is initialized, now we keep expanding the front until nodes are dealt with
@@ -157,7 +184,7 @@ Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacl
       }
 
 #if PRINTDEBUG == 1
-      fprintf(stderr, "Expanding ");
+      fprintf(stderr, "Expanding %p : ", current);
       print_obstacle(stderr, current);
       fprintf(stderr, "\n");
 #endif

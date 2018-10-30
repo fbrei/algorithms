@@ -6,7 +6,7 @@ ALGOSRC=src/astar.c src/tangents.c src/vgraph.c
 
 CC=gcc
 CFLAGS=-std=c99 -lm
-TESTFLAGS=-O0 -ggdb -Wall -Wextra
+TESTFLAGS=-O0 -ggdb -Wall -Wextra -g
 PERFFLAGS=-O3 -march=native
 
 MEMTEST=valgrind --tool=memcheck --leak-check=full
