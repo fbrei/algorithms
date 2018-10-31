@@ -2,7 +2,7 @@
 #include "include/globals.h"
 #include <stdio.h>
 
-#define PRINTDEBUG 1
+#define PRINTDEBUG 0
 
 int compare_to(void* a,void* b) {
   UNUSED(a);
@@ -104,7 +104,6 @@ Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacl
     HSet *expanded, *local_expanded;
 
     local = prqueue_init(compare_to);
-    prqueue_add(local, co);
     local->equals = equals;
 
     front = prqueue_init(compare_to);
@@ -163,12 +162,13 @@ Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacl
 #endif
               }
             }
+            dlist_destroy(blocking,NULL);
           }
-          dlist_destroy(blocking, NULL);
         }
         dlist_destroy(out,NULL);
       }
       hset_destroy(local_expanded, NULL);
+      dlist_destroy(co,NULL);
     }
 
     // The front is initialized, now we keep expanding the front until nodes are dealt with
@@ -207,6 +207,7 @@ Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacl
               prqueue_add(local, tmp_obstacle);
             }
           }
+          dlist_destroy(blocking,NULL);
         }
       }
       dlist_destroy(out,NULL);
