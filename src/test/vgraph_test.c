@@ -10,8 +10,16 @@
 #define PRINT_FULL_GRAPH 0
 #define TEST_RANDOM 0
 #define RANDOM_OBST 20
-#define TEST_SET 4
-#define BOTH_METHODS 0
+// Test sets:
+// 1 - 
+// 2 - 
+// 3 - 
+// 4 - Dynamic fails because visibility cone in front of
+//     obstale was not taken account of
+// 5 - After fixing 4, Dynamic fails because the start is
+//     not being connected to any obstacle at all
+#define TEST_SET 5
+#define BOTH_METHODS 1
 
 /**
  * Calculates the euclidian distance between two map points
@@ -260,6 +268,86 @@ int main() {
   dlist_push(obstacles,c);
   dlist_push(work_obstacles, c);
 
+#elif TEST_SET == 5
+  c = obstacle_init(-28,-21,6);
+  dlist_push(obstacles, c);
+  dlist_push(work_obstacles, c);
+  
+  c = obstacle_init(-21,28,6);
+  dlist_push(obstacles, c);
+  dlist_push(work_obstacles, c);
+  
+  c = obstacle_init(46,0,6);
+  dlist_push(obstacles, c);
+  dlist_push(work_obstacles, c);
+  
+  c = obstacle_init(22,13,6);
+  dlist_push(obstacles, c);
+  dlist_push(work_obstacles, c);
+  
+  c = obstacle_init(6,-33,6);
+  dlist_push(obstacles, c);
+  dlist_push(work_obstacles, c);
+  
+  c = obstacle_init(29,28,6);
+  dlist_push(obstacles, c);
+  dlist_push(work_obstacles, c);
+  
+  c = obstacle_init(16,27,6);
+  dlist_push(obstacles, c);
+  dlist_push(work_obstacles, c);
+  
+  c = obstacle_init(33,-40,6);
+  dlist_push(obstacles, c);
+  dlist_push(work_obstacles, c);
+  
+  c = obstacle_init(-8,0,6);
+  dlist_push(obstacles, c);
+  dlist_push(work_obstacles, c);
+  
+  c = obstacle_init(-9,-44,6);
+  dlist_push(obstacles, c);
+  dlist_push(work_obstacles, c);
+  
+  c = obstacle_init(4,35,6);
+  dlist_push(obstacles, c);
+  dlist_push(work_obstacles, c);
+  
+  c = obstacle_init(-33,9,6);
+  dlist_push(obstacles, c);
+  dlist_push(work_obstacles, c);
+  
+  c = obstacle_init(-9,24,6);
+  dlist_push(obstacles, c);
+  dlist_push(work_obstacles, c);
+  
+  c = obstacle_init(14,-7,6);
+  dlist_push(obstacles, c);
+  dlist_push(work_obstacles, c);
+  
+  c = obstacle_init(40,15,6);
+  dlist_push(obstacles, c);
+  dlist_push(work_obstacles, c);
+  
+  c = obstacle_init(-19,12,6);
+  dlist_push(obstacles, c);
+  dlist_push(work_obstacles, c);
+  
+  c = obstacle_init(-40,43,6);
+  dlist_push(obstacles, c);
+  dlist_push(work_obstacles, c);
+  
+  c = obstacle_init(41,34,6);
+  dlist_push(obstacles, c);
+  dlist_push(work_obstacles, c);
+  
+  c = obstacle_init(2,8,6);
+  dlist_push(obstacles, c);
+  dlist_push(work_obstacles, c);
+  
+  c = obstacle_init(18,-47,6);
+  dlist_push(obstacles, c);
+  dlist_push(work_obstacles, c);
 #endif
 
 #endif
