@@ -5,8 +5,6 @@
 #define PRINTDEBUG 0
 
 int compare_to(void* a,void* b) {
-  UNUSED(a);
-  UNUSED(b);
   return 1;
 }
 
@@ -153,6 +151,7 @@ Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacl
             free(tmp_point);
             CircularObstacle *tmp_obstacle = NULL;
             for(size_t idx = 0; idx < blocking->num_items; idx++) {
+              tmp_obstacle = darray_get(blocking->data,idx);
               if(!prqueue_contains(local, tmp_obstacle)) {
                 prqueue_add(local, tmp_obstacle);
 #if PRINTDEBUG == 1
