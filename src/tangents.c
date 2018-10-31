@@ -487,8 +487,6 @@ DList* tangent_get_blocking(MapPoint *from, MapPoint *to, DList *obstacles, void
       continue;
     }
 
-    MapPoint *po = &(co->position);
-
     double x = co->position.x;
     double y = co->position.y;
 
