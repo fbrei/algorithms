@@ -8,7 +8,7 @@
 #include <stdlib.h>
 
 #define PRINT_FULL_GRAPH 0
-#define TEST_RANDOM 0
+#define TEST_RANDOM 1
 #define RANDOM_OBST 20
 // Test sets:
 // 1 - 
@@ -19,7 +19,8 @@
 // 5 - After fixing 4, Dynamic fails because the start is
 //     not being connected to any obstacle at all
 #define TEST_SET 5
-#define BOTH_METHODS 1
+#define BOTH_METHODS 0
+#define MEASUREMENT_OUTPUT 1
 
 /**
  * Calculates the euclidian distance between two map points
@@ -381,16 +382,25 @@ int main() {
 #endif
 
   t1 = clock();
-  g2 = vgraph_circular_obstacles(start2, goal2, work_obstacles, euclid_distance,2);
+  g2 = vgraph_circular_obstacles(start2, goal2, work_obstacles, euclid_distance,0);
   t_inter = clock();
   p2 = astar(g2, start2, goal2, euclid_distance, hash);
   t2 = clock();
   p2_start = p2;
+
+#if MEASUREMENT_OUTPUT
+  if(p2) {
+    fprintf(stderr,"%lu\n", t2 - t1);
+  } else {
+    fprintf(stderr,"%lu\n", 999999l);
+  }
+#else
   if(p2) {
     fprintf(stderr,"Dynamic: %lu | %lu | %g\n", t2 - t_inter, t_inter - t1, p2->total_dist);
   } else {
     fprintf(stderr,"Dynamic: %lu | %lu | %g\n", t2 - t_inter, t_inter - t1, 99999.9);
   }
+#endif
 
   // Calculate the time taken in seconds
 
