@@ -1,6 +1,7 @@
 #include "include/vgraph.h"
 #include "include/astar.h"
 #include "include/tangents.h"
+#include "lib/sfmt/SFMT.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -20,7 +21,7 @@
 //     not being connected to any obstacle at all
 #define TEST_SET 5
 #define BOTH_METHODS 0
-#define MEASUREMENT_OUTPUT 1
+#define MEASUREMENT_OUTPUT 0
 
 /**
  * Calculates the euclidian distance between two map points
@@ -28,6 +29,7 @@
  */
 double euclid_distance(void*, void*);
 
+static sfmt_t state;
 
 /**
  * Can be used to print out the graph for postprocessing
@@ -35,8 +37,9 @@ double euclid_distance(void*, void*);
 void print_graph_node(void*);
 
 unsigned long hash(void *);
+
 int randint(int min, int max) {
-  return (int) (( (double) rand() ) / RAND_MAX * (max-min) + min);
+  return (sfmt_genrand_uint32(&state) % (max - min)) + min;
 }
 
 void add_random_obstacle(DList *obstacles, DList *work_obstacles, MapPoint *goal, MapPoint *start) {
@@ -75,6 +78,7 @@ void add_random_obstacle(DList *obstacles, DList *work_obstacles, MapPoint *goal
 int main() {
 
   srand(time(0));
+  sfmt_init_gen_rand(&state,1234);
 
   // First we need to advertise the start and end location
   // for our path planning instance

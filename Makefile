@@ -4,6 +4,9 @@ DTYPESDIR=lib/dtypes
 DTYPESSRC=$(DTYPESDIR)/src/darray.c $(DTYPESDIR)/src/dlist.c $(DTYPESDIR)/src/graph.c $(DTYPESDIR)/src/hset.c $(DTYPESDIR)/src/prqueue.c 
 ALGOSRC=src/astar.c src/tangents.c src/vgraph.c
 
+SFMTDIR=lib/sfmt
+SFMTSRC=$(SFMTDIR)/SFMT.c
+
 CC=gcc
 CFLAGS=-std=c99 -lm
 TESTFLAGS=-O0 -ggdb -Wall -Wextra -g
@@ -20,9 +23,9 @@ tangent_test:
 	valgrind --tool=memcheck --leak-check=full bin/tangent_test
 
 vgraph_test:
-	$(CC) $(CFLAGS) $(TESTFLAGS) $(DTYPESSRC) $(ALGOSRC) src/test/vgraph_test.c -I. -I$(DTYPESDIR) -o bin/vgraph_test
+	$(CC) $(CFLAGS) $(TESTFLAGS) $(DTYPESSRC) $(ALGOSRC) $(SFMTSRC) src/test/vgraph_test.c -I. -I$(DTYPESDIR) -o bin/vgraph_test
 	$(MEMTEST) bin/vgraph_test
 
 vgraph_perf_test:
-	$(CC) $(CFLAGS) $(PERFFLAGS) $(DTYPESSRC) $(ALGOSRC) src/test/vgraph_test.c -I. -I$(DTYPESDIR) -o bin/vgraph_test
+	$(CC) $(CFLAGS) $(PERFFLAGS) $(DTYPESSRC) $(ALGOSRC) $(SFMTSRC) src/test/vgraph_test.c -I. -I$(DTYPESDIR) -o bin/vgraph_test
 	bin/vgraph_test
