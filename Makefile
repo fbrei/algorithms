@@ -28,4 +28,4 @@ vgraph_test:
 
 vgraph_perf_test:
 	$(CC) $(CFLAGS) $(PERFFLAGS) $(DTYPESSRC) $(ALGOSRC) $(SFMTSRC) src/test/vgraph_test.c -I. -I$(DTYPESDIR) -o bin/vgraph_test
-	bin/vgraph_test
+	bin/vgraph_test > full_vs_dynamic.dat
