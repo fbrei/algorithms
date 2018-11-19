@@ -52,7 +52,16 @@ AStarPathNode* astar(Graph *g, void *start, void *goal, double (*heuristic)(void
         if(hset_contains(explored, tmp) != -1) {
           free(tmp);
         } else {
-          prqueue_add(frontier, tmp);
+          if(prqueue_contains(frontier,tmp)) {
+            AStarPathNode *current_best = prqueue_get(frontier,tmp);
+            if(current_best->total_dist < tmp->total_dist) {
+              free(tmp);
+            } else {
+              prqueue_replace(frontier,current_best,tmp);
+            }
+          } else {
+            prqueue_add(frontier, tmp);
+          }
         }
       }
       darray_destroy(neighbors, NULL);

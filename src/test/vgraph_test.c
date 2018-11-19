@@ -12,7 +12,6 @@
 
 #define PRINT_FULL_GRAPH 0
 #define TEST_RANDOM 1
-#define RANDOM_OBST 40
 // Test sets:
 // -1 . random
 // 1 - 
@@ -25,11 +24,12 @@
 #define TEST_SET -1
 #define MEASUREMENT_OUTPUT 0
 
-#define INDIVIDUAL_RUNS 10
+#define INDIVIDUAL_RUNS 2
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932
 #endif
+
 
 /**
  * Calculates the euclidian distance between two map points
@@ -54,7 +54,8 @@ void reset_obstacles(DList *obstacles);
 unsigned long test_run(DList* obstacles, int method);
 
 static sfmt_t state;
-static const double OBST_RADIUS = sqrt( (10000 * 0.2261946710584651104) / (RANDOM_OBST * M_PI) );
+static unsigned int RANDOM_OBST;
+static double OBST_RADIUS;
 
 /**
  * Can be used to print out the graph for postprocessing
@@ -103,9 +104,7 @@ void add_random_obstacle(DList *obstacles, DList *work_obstacles, MapPoint *goal
 
 int main() {
 
-  fprintf(stderr, "Obstacle radius: %g\n", OBST_RADIUS);
-
-  sfmt_init_gen_rand(&state,4346);
+  sfmt_init_gen_rand(&state,1991);
 
   // First we need to advertise the start and end location
   // for our path planning instance
@@ -116,14 +115,8 @@ int main() {
   MapPoint *goal1 = malloc(sizeof(MapPoint));
   goal1->x = -50;
   goal1->y = -50;
-  /*  */
-  /* MapPoint *start2 = malloc(sizeof(MapPoint)); */
-  /* start2->x = 50; */
-  /* start2->y = 50; */
-  /*  */
-  /* MapPoint *goal2 = malloc(sizeof(MapPoint)); */
-  /* goal2->x = -50; */
-  /* goal2->y = -50; */
+
+  RANDOM_OBST = 100;
 
   // Next we create a list of round obstacles that
   // the agent should move around
@@ -133,20 +126,24 @@ int main() {
   // to estimate the remaining distance to the goal.
   
   // We also compare different graph building strategies
-  
-  for(int run = 0; run < 20; run++) {
-    fprintf(stderr, "%d\n", run);
+
+
+  for(int run = 0; run < 1; run++) {
+
+    OBST_RADIUS = sqrt( (10000 * 0.2261946710584651104) / (RANDOM_OBST * M_PI) );
+
+    fprintf(stderr, "%d - %d\n", run, RANDOM_OBST);
     unsigned long t1 = 0, t2 = 0;
 
     DList *obstacles = dlist_init(), *work_obstacles = dlist_init();
     init_obstacles(obstacles, work_obstacles, TEST_SET, start1, goal1);
 
-    for(int ii = 0; ii < INDIVIDUAL_RUNS; ii++) {
-      t1 += test_run(work_obstacles,0);
-      reset_obstacles(work_obstacles);
-    }
-
-    t1 /= INDIVIDUAL_RUNS;
+    /* for(int ii = 0; ii < INDIVIDUAL_RUNS; ii++) { */
+    /*   t1 += test_run(work_obstacles,0); */
+    /*   reset_obstacles(work_obstacles); */
+    /* } */
+    /*  */
+    /* t1 /= INDIVIDUAL_RUNS; */
 
     for(int ii = 0; ii < INDIVIDUAL_RUNS; ii++) {
       t2 += test_run(work_obstacles,2);
@@ -207,29 +204,6 @@ int main() {
   /* printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n"); */
 #endif
 
-
-#if PRINT_FULL_GRAPH
-  // Output the final path by traversing the list that was returned
-  printf("Final path:\n");
-  while(p2) {
-    print_graph_node(p2->data);
-    printf("\n");
-    p2 = p2->parent;
-  }
-
-
-  // This will be used by a python script to create a plot
-  CircularObstacle *obst = NULL;
-  printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
-  graph_print(g2, print_graph_node);
-  printf("OBSTACLES: ");
-  while((obst = (CircularObstacle*) dlist_iterate(obstacles,obst)) != NULL) {
-    CircularObstacle *c = (CircularObstacle*) obst;
-    printf("(%g,%g,%g),",c->position.x, c->position.y, c->radius);
-  }
-  printf("\n");
-  printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
-#endif
 
 /*  */
 /* #if BOTH_METHODS == 1 */
@@ -307,6 +281,36 @@ unsigned long test_run(DList* obstacles, int method) {
   p = astar(g, start, goal, euclid_distance, hash);
   t2 = clock();
 
+#if PRINT_FULL_GRAPH
+
+  AStarPathNode *p_start = p;
+
+  // Output the final path by traversing the list that was returned
+  printf("Final path:\n");
+  while(p) {
+    print_graph_node(p->data);
+    printf("\n");
+    p = p->parent;
+  }
+
+
+  // This will be used by a python script to create a plot
+  CircularObstacle *obst = NULL;
+  printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
+  graph_print(g, print_graph_node);
+  printf("OBSTACLES: ");
+  while((obst = (CircularObstacle*) dlist_iterate(obstacles,obst)) != NULL) {
+    CircularObstacle *c = (CircularObstacle*) obst;
+    printf("(%g,%g,%g),",c->position.x, c->position.y, c->radius);
+  }
+  printf("\n");
+  printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
+
+  p = p_start;
+#endif
+
+  /* fprintf(stderr, "%lu %lu\n", t_inter - t1, t2 - t_inter); */
+  /* fprintf(stderr, "%g\n", p->total_dist); */
   graph_destroy(g,free);
   astar_free_path(p);
 

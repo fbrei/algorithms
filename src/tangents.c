@@ -109,6 +109,7 @@ DList* tangent_circle_outer_intersects(CircularObstacle *c1, CircularObstacle *c
   if(source_r == target_r) {
   
     DList *result = dlist_init();
+
     MapPoint *p1 = malloc(sizeof(MapPoint));
     MapPoint *p2 = malloc(sizeof(MapPoint));
     MapPoint *p3 = malloc(sizeof(MapPoint));
@@ -172,6 +173,15 @@ DList* tangent_circle_inner_intersects(CircularObstacle *c1, CircularObstacle *c
   if(source_r == target_r) {
 
     DList *result = dlist_init();
+
+    double dx = source_x - target_x;
+    double dy = source_y - target_y;
+    double dist = sqrt(dx*dx + dy*dy);
+
+    if(dist < 2.0 * source_r) {
+      return result;
+    }
+
     MapPoint *p1 = malloc(sizeof(MapPoint));
     MapPoint *p2 = malloc(sizeof(MapPoint));
     MapPoint *p3 = malloc(sizeof(MapPoint));
@@ -258,6 +268,7 @@ DList* tangent_circle_inner_intersects(CircularObstacle *c1, CircularObstacle *c
 DList* tangent_circle_intersects(CircularObstacle *c1, CircularObstacle *c2) {
   DList *total = tangent_circle_outer_intersects(c1,c2);
   DList *second = tangent_circle_inner_intersects(c1,c2);
+
 
   MapPoint *tmp = NULL;
   while((tmp = dlist_iterate(second, tmp)) != NULL) {
@@ -481,7 +492,10 @@ DList* tangent_get_blocking(MapPoint *from, MapPoint *to, DList *obstacles, void
 
   void *tmp = NULL;
   DList* results = NULL;
-  while((tmp = dlist_iterate(obstacles, tmp)) != NULL) {
+  /* while((tmp = dlist_iterate(obstacles, tmp)) != NULL) { */
+  for(size_t idx = 0; idx < obstacles->num_items; idx++) {
+    tmp = darray_get(obstacles->data,idx);
+    
     CircularObstacle *co = (CircularObstacle*) tmp;
     if(tmp == self) {
       continue;
@@ -511,7 +525,8 @@ DList* tangent_get_blocking(MapPoint *from, MapPoint *to, DList *obstacles, void
       double x1 = -p / 2.0 + sqrt_q, y1 = m * x1 + n;
       double x2 = -p / 2.0 + sqrt_q, y2 = m * x2 + n;
 
-      if( (x1 > min_x && x1 < max_x && y1 > min_y && y1 < max_y) || (x2 > min_x && x2 < max_x && y2 > min_y && y2 < max_y) ) {
+      /* if( (x1 > min_x && x1 < max_x && y1 > min_y && y1 < max_y) || (x2 > min_x && x2 < max_x && y2 > min_y && y2 < max_y) ) { */
+      if( (x1 > min_x && x1 < max_x) || (x2 > min_x && x2 < max_x)) {
         if(results == NULL) {
           results = dlist_init();
         }

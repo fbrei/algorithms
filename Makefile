@@ -10,7 +10,7 @@ SFMTSRC=$(SFMTDIR)/SFMT.c
 CC=gcc
 CFLAGS=-std=c99 -lm
 TESTFLAGS=-O0 -ggdb -Wall -Wextra -g
-PERFFLAGS=-O3 -march=native
+PERFFLAGS=-O3 -march=native -s
 
 MEMTEST=valgrind --tool=memcheck --leak-check=full
 
@@ -28,4 +28,7 @@ vgraph_test:
 
 vgraph_perf_test:
 	$(CC) $(CFLAGS) $(PERFFLAGS) $(DTYPESSRC) $(ALGOSRC) $(SFMTSRC) src/test/vgraph_test.c -I. -I$(DTYPESDIR) -o bin/vgraph_test
-	bin/vgraph_test > full_vs_dynamic.dat
+	bin/vgraph_test
+
+vgraph_single_test:
+	$(CC) $(CFLAGS) $(PERFFLAGS) $(DTYPESSRC) $(ALGOSRC) $(SFMTSRC) src/test/vgraph_single_test.c -I. -I$(DTYPESDIR) -o bin/vgraph_single_test
