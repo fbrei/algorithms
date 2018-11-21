@@ -15,20 +15,7 @@
 #define TANGENTS_H_UJO8EG29
 
 #include "lib/dtypes/include/dtype.h"
-
-
-/** \brief Describes a point in a 2D-plant
- *
- *  Used to hold and group coordinates.
- */
-typedef struct _MapPoint {
-  double x;   /**< The x-coordinate */
-  double y;   /**< The y-coordinate */
-  double score;
-  double h;
-  short is_in; /**< Incoming (1) or outgoing point (0) */
-} MapPoint;
-
+#include "include/globals.h"
 
 /*! \struct _CircularObstacle 
  *  \brief Brief struct description
