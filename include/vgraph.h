@@ -18,6 +18,7 @@
 
 #include "lib/dtypes/include/graph.h"
 #include "include/tangents.h"
+#include "include/polygons.h"
 
 /**
  * \brief Brief description
@@ -36,5 +37,10 @@ Graph* vgraph_circular_obstacles(MapPoint *start,
     double (*distance_metric)(void*, void*),
     const int dynamic);
 
+Graph* vgraph_polygonal_obstacles(MapPoint *start, 
+    MapPoint *goal, 
+    DList *obstacles,
+    double (*distance_metric)(void*, void*),
+    const int dynamic);
 
 #endif /* end of include guard: VGRAPH_H_AWDEVYPA */

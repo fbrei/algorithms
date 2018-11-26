@@ -2,7 +2,7 @@ all: astar_test tangent_test
 
 DTYPESDIR=lib/dtypes
 DTYPESSRC=$(DTYPESDIR)/src/darray.c $(DTYPESDIR)/src/dlist.c $(DTYPESDIR)/src/graph.c $(DTYPESDIR)/src/hset.c $(DTYPESDIR)/src/prqueue.c 
-ALGOSRC=src/astar.c src/tangents.c src/vgraph.c
+ALGOSRC=src/astar.c src/tangents.c src/vgraph.c src/polygons.c
 
 SFMTDIR=lib/sfmt
 SFMTSRC=$(SFMTDIR)/SFMT.c
@@ -32,3 +32,6 @@ vgraph_perf_test:
 
 vgraph_single_test:
 	$(CC) $(CFLAGS) $(PERFFLAGS) $(DTYPESSRC) $(ALGOSRC) $(SFMTSRC) src/test/vgraph_single_test.c -I. -I$(DTYPESDIR) -o bin/vgraph_single_test
+
+vgraph_polygon_test:
+	$(CC) $(CFLAGS) $(PERFFLAGS) $(DTYPESSRC) $(ALGOSRC) $(SFMTSRC) src/test/vgraph_polygons_test.c -I. -I$(DTYPESDIR) -o bin/vgraph_polygon_test

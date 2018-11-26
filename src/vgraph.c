@@ -413,3 +413,81 @@ Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacl
 
   return g;
 }
+
+Graph* vgraph_polygonal_obstacles(MapPoint *start, MapPoint *goal, DList *obstacles, double (*distance_metric)(void*, void*), const int dynamic) {
+  Graph *g = graph_init(GRAPH_DIRECTED);
+  graph_add(g, start);
+  graph_add(g, goal);
+
+  if(dynamic == 2) {
+
+  } else {
+
+    if(!polygon_is_blocked(start,goal,obstacles)) {
+      graph_connect(g,start,goal,distance_metric(start,goal));
+    }
+
+    size_t n_obstacles = obstacles->num_items;
+    for(size_t ii = 0; ii < n_obstacles; ii++) {
+      PolygonalObstacle *p = darray_get(obstacles->data,ii);
+      size_t n_corners = p->corners->num_items;
+      for(size_t idx = 0; idx < n_corners; idx++) {
+
+        MapPoint *current = darray_get(p->corners->data,idx);
+        graph_add(g,current);
+
+        // First try to make a connection to the start
+        if(!polygon_is_blocked(start, current, obstacles)) {
+          graph_connect(g,start,current, distance_metric(start,current));
+        }
+
+        // Then see if the goal is visible
+        
+        if(!polygon_is_blocked(current, goal, obstacles)) {
+          graph_connect(g,current,goal,distance_metric(goal,current));
+        }
+      }
+
+    }
+
+    // Now all corners are already added to the graph so we can try to
+    // interconnect them
+
+    for(size_t ii = 0; ii < n_obstacles; ii++) {
+      PolygonalObstacle *p = darray_get(obstacles->data,ii);
+      size_t n_p_corners = p->corners->num_items;
+      for(size_t corner_ii = 0; corner_ii < n_p_corners; corner_ii++) {
+        MapPoint *current = darray_get(p->corners->data,corner_ii);
+        for(size_t jj = 0; jj < n_obstacles; jj++) {
+          PolygonalObstacle *o = darray_get(obstacles->data,jj);
+          if(o == p) continue;
+          size_t n_o_corners = o->corners->num_items;
+          for(size_t corner_jj = 0; corner_jj < n_o_corners; corner_jj++) {
+            MapPoint *next = darray_get(o->corners->data,corner_jj);
+            if(!polygon_is_blocked(current,next,obstacles)) {
+              graph_connect(g,current,next,distance_metric(current,next));
+            }
+          }
+        }
+      }
+    }
+
+    // Finally we connect all corners of a polygon that are direct neighbors
+    for(size_t ii = 0; ii < n_obstacles; ii++) {
+      PolygonalObstacle *p = darray_get(obstacles->data,ii);
+      size_t n_p_corners = p->corners->num_items;
+      for(int jj = 0; jj < n_p_corners; jj++) {
+        MapPoint *first = darray_get(p->corners->data,jj);
+        MapPoint *second = darray_get(p->corners->data,(jj+1) % n_p_corners);
+        if(distance_metric(first,goal) < distance_metric(second,goal)) {
+          graph_connect(g,second,first,distance_metric(first,second));
+        } else {
+          graph_connect(g,first,second,distance_metric(first,second));
+        }
+      }
+    }
+    
+  }
+
+  return g;
+}
