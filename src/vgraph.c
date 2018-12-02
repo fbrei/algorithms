@@ -26,6 +26,14 @@ unsigned long obstacle_hash(void *v) {
   return (unsigned long) v;
 }
 
+void print_polygon(FILE *stream, void *o) {
+  PolygonalObstacle *p = (PolygonalObstacle*) o;
+  for(size_t idx = 0; idx < p->corners->num_items; idx++) {
+    MapPoint *c = darray_get(p->corners->data,idx);
+    fprintf(stream, "(%g,%g) -> ", c->x, c->y);
+  }
+}
+
 Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacles, double (*distance_metric)(void*, void*), const int DYNAMIC) {
 
   Graph *g = graph_init(GRAPH_DIRECTED);
@@ -419,7 +427,136 @@ Graph* vgraph_polygonal_obstacles(MapPoint *start, MapPoint *goal, DList *obstac
   graph_add(g, start);
   graph_add(g, goal);
 
+  size_t n_obstacles = obstacles->num_items;
+
   if(dynamic == 2) {
+
+    // We have to add all corners of all obstacles to the graph first
+    // This is just O(n) so not all that bad, but we will fix this in
+    // a later release nonetheless. For now it makes bookkeeping way
+    // easier and allows to focus on the actual algorithm
+    for(size_t ii = 0; ii < n_obstacles; ii++) {
+      PolygonalObstacle *p = darray_get(obstacles->data, ii);
+      for(size_t jj = 0; jj < p->corners->num_items; jj++) {
+        graph_add(g, darray_get(p->corners->data,jj));
+      }
+    }
+
+    // First try to reach the goal directly.
+    // If this succeeds, we are already done,
+    // We do not use the is_blocked method because
+    // we do not want to recalculate which obstacle might
+    // be blocking our path
+    PolygonalObstacle *o = polygon_get_first_blocking(start,goal,obstacles,NULL);
+    if(o == NULL) {
+      graph_connect(g,start,goal,distance_metric(start,goal));
+    } else {
+      
+      // There is no direct path, we need to dynamically iterate over the obstacles until
+      // we have found one
+
+      HSet *explored = hset_init(obstacle_hash, equals);
+      HSet *local_explored = hset_init(obstacle_hash, equals);
+      PrQueue *front = prqueue_init(compare_to);
+      PrQueue *local = prqueue_init(compare_to);
+      local->equals = equals;
+      front->equals = equals;
+
+      // First we expand our visibility cone from the start
+      // We try to make a connection to the obstacle that is
+      // blocking us and repeat the process if that conection
+      // itself is again blocked.
+      prqueue_add(local, o);
+      while((o = prqueue_pop(local)) != NULL) {
+      
+        if(hset_contains(local_explored,o) != -1) {
+          continue;
+        } else {
+          hset_add(local_explored,o);
+        }
+
+        if(!prqueue_contains(front,o)) {
+          prqueue_add(front,o);
+        }
+
+        size_t n_corners = o->corners->num_items;
+        for(size_t ii = 0; ii < n_corners; ii++) {
+          MapPoint *corner = darray_get(o->corners->data,ii);
+          PolygonalObstacle *p = polygon_get_first_blocking(start,corner,obstacles,o);
+          if(p == NULL) {
+            graph_connect(g,start,corner,distance_metric(start,corner));
+          } else {
+            if(!prqueue_contains(local,p)) {
+              prqueue_add(local,p);
+            }
+          }
+        }
+
+      }
+
+      // Now that we have initialized the list of interesting
+      // obstacles, we repeat the above proces for each one of
+      // them except that now we are dealing with full obstacles
+      // instead of a single point.
+      while((o = prqueue_pop(front)) != NULL) {
+
+        if(hset_contains(explored,o) != -1) {
+          continue;
+        } else {
+          hset_add(explored,o);
+        }
+
+        // Initialize local queue by trying to reach the goal directly
+        size_t n_corners = o->corners->num_items;
+        for(size_t ii = 0; ii < n_corners; ii++) {
+          MapPoint *corner = darray_get(o->corners->data,ii);
+          PolygonalObstacle *p = polygon_get_first_blocking(corner,goal,obstacles,o);
+
+          if(p == NULL) {
+            graph_connect(g,corner,goal,distance_metric(corner,goal));
+          } else {
+            if(!prqueue_contains(local,p)) {
+              prqueue_add(local,p);
+            }
+          }
+        }
+
+        // The Q has been prepared, now we can start
+        // working on it
+        PolygonalObstacle *p;
+        while((p = prqueue_pop(local)) != NULL) {
+          if(hset_contains(local_explored,p) != -1) {
+            continue;
+          } else {
+            hset_add(local_explored, p);
+          }
+
+          if(!prqueue_contains(front,p)) {
+            prqueue_add(front,p);
+          }
+
+          size_t n_p_corners = p->corners->num_items;
+          for(size_t ii = 0; ii < n_corners; ii++) {
+            for(size_t jj = 0; jj < n_p_corners; jj++) {
+              MapPoint *from = darray_get(o->corners->data,ii);
+              MapPoint *to = darray_get(p->corners->data,jj);
+
+              PolygonalObstacle *q = polygon_get_first_blocking(from,to,obstacles,NULL);
+              if(q == NULL) {
+                graph_connect(g,from,to,distance_metric(from,to));
+              } else {
+                if(q != o && q != p && !prqueue_contains(local,q)) {
+                  prqueue_add(local,q);
+                }
+              }
+            }
+          }
+        }
+
+      }
+    }
+
+    
 
   } else {
 
@@ -427,7 +564,6 @@ Graph* vgraph_polygonal_obstacles(MapPoint *start, MapPoint *goal, DList *obstac
       graph_connect(g,start,goal,distance_metric(start,goal));
     }
 
-    size_t n_obstacles = obstacles->num_items;
     for(size_t ii = 0; ii < n_obstacles; ii++) {
       PolygonalObstacle *p = darray_get(obstacles->data,ii);
       size_t n_corners = p->corners->num_items;

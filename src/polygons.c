@@ -26,9 +26,9 @@ unsigned short polygon_is_blocked(MapPoint *p1, MapPoint *p2, DList *obstacles) 
       double dy_o = o2->y - o1->y;
 
       double t = (dy_p * p1->x - dx_p * p1->y - dy_p * o1->x + dx_p * o1->y) / (dy_p * dx_o - dx_p * dy_o);
-      double s = ((o1->x-p1->x) + (o1->y-p1->y) + t * (dx_o + dy_o)) / (dx_p + dy_p);
 
       if(t >= 0 && t <= 1) {
+        double s = ((o1->x-p1->x) + (o1->y-p1->y) + t * (dx_o + dy_o)) / (dx_p + dy_p);
         if(s >= 0 && s <= 1) {
           return 1;
         }
@@ -40,5 +40,36 @@ unsigned short polygon_is_blocked(MapPoint *p1, MapPoint *p2, DList *obstacles) 
 }
 
 PolygonalObstacle* polygon_get_first_blocking(MapPoint* from, MapPoint* to, DList* obstacles, PolygonalObstacle* self) {
-  /* MOVE ME TO SOURCE FILE */
+  double dx_p = to->x - from->x;
+  double dy_p = to->y - from->y;
+
+  double best_s = 1.0;
+  PolygonalObstacle* closest_obstacle = NULL;
+
+  size_t n_obstacles = obstacles->num_items;
+  for(size_t idx = 0; idx < n_obstacles; idx++) {
+    PolygonalObstacle* current = darray_get(obstacles->data, idx);
+    if(current == self) {
+      continue;
+    }
+
+    size_t n_corners = current->corners->num_items;
+    for(size_t inner_idx = 0; inner_idx < n_corners; inner_idx++) {
+      MapPoint *o1 = darray_get(current->corners->data, inner_idx);
+      MapPoint *o2 = darray_get(current->corners->data, (inner_idx+1) % n_corners);
+
+      double dx_o = o2->x - o1->x;
+      double dy_o = o2->y - o1->y;
+
+      double t = (dy_p * from->x - dx_p * from->y - dy_p * o1->x + dx_p * o1->y) / (dy_p * dx_o - dx_p * dy_o);
+      double s = ((o1->x-from->x) + (o1->y-from->y) + t * (dx_o + dy_o)) / (dx_p + dy_p);
+
+      if(s < best_s && s > 0 && t > 0 && t < 1) {
+        best_s = s;
+        closest_obstacle = current;
+      }
+    }
+  }
+
+  return closest_obstacle;
 }

@@ -34,4 +34,4 @@ vgraph_single_test:
 	$(CC) $(CFLAGS) $(PERFFLAGS) $(DTYPESSRC) $(ALGOSRC) $(SFMTSRC) src/test/vgraph_single_test.c -I. -I$(DTYPESDIR) -o bin/vgraph_single_test
 
 vgraph_polygon_test:
-	$(CC) $(CFLAGS) $(PERFFLAGS) $(DTYPESSRC) $(ALGOSRC) $(SFMTSRC) src/test/vgraph_polygons_test.c -I. -I$(DTYPESDIR) -o bin/vgraph_polygon_test
+	$(CC) $(CFLAGS) $(TESTFLAGS) $(DTYPESSRC) $(ALGOSRC) $(SFMTSRC) src/test/vgraph_polygons_test.c -I. -I$(DTYPESDIR) -o bin/vgraph_polygon_test

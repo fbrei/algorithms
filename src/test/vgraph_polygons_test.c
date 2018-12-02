@@ -151,7 +151,7 @@ int main(int argc, const char** argv) {
   AStarPathNode *p;
 
   t1 = clock();
-  Graph *g = vgraph_polygonal_obstacles(start,goal,obstacles,euclid_distance,0);
+  Graph *g = vgraph_polygonal_obstacles(start,goal,obstacles,euclid_distance,2);
   t_inter = clock();
   p = astar(g, start, goal, euclid_distance, hash);
   t2 = clock();
