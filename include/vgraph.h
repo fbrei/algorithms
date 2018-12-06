@@ -43,4 +43,11 @@ Graph* vgraph_polygonal_obstacles(MapPoint *start,
     double (*distance_metric)(void*, void*),
     const int dynamic);
 
+Graph* vgraph(MapPoint *start, 
+    MapPoint *goal, 
+    DList *polygons,
+    DList *spheres,
+    double (*distance_metric)(void*, void*),
+    const int dynamic);
+
 #endif /* end of include guard: VGRAPH_H_AWDEVYPA */

@@ -45,4 +45,6 @@ void polygon_destroy(PolygonalObstacle *po);
  */
 PolygonalObstacle* polygon_get_first_blocking(MapPoint* from, MapPoint* to, DList* obstacles, PolygonalObstacle* self);
 
+PolygonalObstacle* convex_hull(DList* map_points);
+
 #endif /* end of include guard: POLYGONS_H_MQ7DFOAE */
