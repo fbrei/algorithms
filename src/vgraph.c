@@ -510,11 +510,12 @@ Graph* vgraph_polygonal_obstacles(MapPoint *start, MapPoint *goal, DList *obstac
         size_t n_corners = o->corners->num_items;
         for(size_t ii = 0; ii < n_corners; ii++) {
           MapPoint *corner = darray_get(o->corners->data,ii);
-          PolygonalObstacle *p = polygon_get_first_blocking(corner,goal,obstacles,o);
 
-          if(p == NULL) {
+
+          if(!polygon_is_blocked(corner,goal,obstacles)) {
             graph_connect(g,corner,goal,distance_metric(corner,goal));
           } else {
+            PolygonalObstacle *p = polygon_get_first_blocking(corner,goal,obstacles,o);
             if(!prqueue_contains(local,p)) {
               prqueue_add(local,p);
             }
@@ -541,10 +542,10 @@ Graph* vgraph_polygonal_obstacles(MapPoint *start, MapPoint *goal, DList *obstac
               MapPoint *from = darray_get(o->corners->data,ii);
               MapPoint *to = darray_get(p->corners->data,jj);
 
-              PolygonalObstacle *q = polygon_get_first_blocking(from,to,obstacles,NULL);
-              if(q == NULL) {
+              if(!polygon_is_blocked(from,to,obstacles)) {
                 graph_connect(g,from,to,distance_metric(from,to));
               } else {
+                PolygonalObstacle *q = polygon_get_first_blocking(from,to,obstacles,NULL);
                 if(q != o && q != p && !prqueue_contains(local,q)) {
                   prqueue_add(local,q);
                 }
