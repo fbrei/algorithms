@@ -649,38 +649,16 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
     
   } else {
     
-    // We will first call the full graph method for spherical obstacles to 
-    // get all tangent points. This is computationally expensive on a
-    // ridiculous level but it suffices for now
-    
-    g = vgraph_circular_obstacles(start, goal, spheres, distance_metric, 0);
-    size_t n_original_nodes = g->node_list->num_items;
+    size_t n_spheres = spheres->num_items;
+    size_t n_polys = polygons->num_items;
 
-    for(size_t ii = 0; ii < polygons->data->num_items; ii++) {
-      PolygonalObstacle *p = darray_get(polygons->data,ii);
-      for(size_t jj = 0; jj < p->corners->num_items; jj++) {
-        graph_add(g,darray_get(p->corners->data,jj));
+    for(size_t ii = 0; ii < n_spheres; ii++) {
+      CircularObstacle *c = darray_get(spheres->data, ii);
+      for(size_t jj = 0; jj < n_spheres; jj++) {
+        if(ii == jj) continue;
       }
-    }
-
-    for(size_t ii = 0; ii < n_original_nodes; ii++) {
-
-      MapPoint *m = darray_get(g->node_list, ii);
-
-      for(size_t jj = 0; jj < polygons->num_items; jj++) {
-
-        PolygonalObstacle *p = darray_get(polygons->data,jj);
-
-        for(size_t kk = 0; kk < p->corners->num_items; kk++) {
-
-          MapPoint *n = darray_get(p->corners->data,kk);
-
-          if(!polygon_is_blocked(m,n,polygons)) {
-           graph_connect(g,n,m,distance_metric(m,n));
-           graph_connect(g,m,n,distance_metric(m,n));
-          }
-
-        }
+      for(size_t jj = 0; jj < n_polys; jj++) {
+        
       }
     }
   }
