@@ -482,10 +482,10 @@ Graph* vgraph_polygonal_obstacles(MapPoint *start, MapPoint *goal, DList *obstac
         size_t n_corners = o->corners->num_items;
         for(size_t ii = 0; ii < n_corners; ii++) {
           MapPoint *corner = darray_get(o->corners->data,ii);
-          PolygonalObstacle *p = polygon_get_first_blocking(start,corner,obstacles,o);
-          if(p == NULL) {
+          if(!polygon_is_blocked(start,corner,obstacles)) {
             graph_connect(g,start,corner,distance_metric(start,corner));
           } else {
+            PolygonalObstacle *p = polygon_get_first_blocking(start,corner,obstacles,o);
             if(!prqueue_contains(local,p)) {
               prqueue_add(local,p);
             }
@@ -506,6 +506,10 @@ Graph* vgraph_polygonal_obstacles(MapPoint *start, MapPoint *goal, DList *obstac
           hset_add(explored,o);
         }
 
+        /* fprintf(stderr, "Expanding "); */
+        /* print_polygon(stderr, o); */
+        /* fprintf(stderr, "\n"); */
+
         // Initialize local queue by trying to reach the goal directly
         size_t n_corners = o->corners->num_items;
         for(size_t ii = 0; ii < n_corners; ii++) {
@@ -516,7 +520,10 @@ Graph* vgraph_polygonal_obstacles(MapPoint *start, MapPoint *goal, DList *obstac
             graph_connect(g,corner,goal,distance_metric(corner,goal));
           } else {
             PolygonalObstacle *p = polygon_get_first_blocking(corner,goal,obstacles,o);
-            if(!prqueue_contains(local,p)) {
+            if(!prqueue_contains(local,p) && p != NULL) {
+              /* fprintf(stderr, "    Blocked by %p :", p); */
+              /* print_polygon(stderr, p); */
+              /* fprintf(stderr, "\n"); */
               prqueue_add(local,p);
             }
           }
@@ -525,12 +532,17 @@ Graph* vgraph_polygonal_obstacles(MapPoint *start, MapPoint *goal, DList *obstac
         // The Q has been prepared, now we can start
         // working on it
         PolygonalObstacle *p;
+        local_explored = hset_init(obstacle_hash, equals);
         while((p = prqueue_pop(local)) != NULL) {
           if(hset_contains(local_explored,p) != -1) {
             continue;
           } else {
             hset_add(local_explored, p);
           }
+
+          /* fprintf(stderr, "    Connecting to "); */
+          /* print_polygon(stderr, p); */
+          /* fprintf(stderr, "\n"); */
 
           if(!prqueue_contains(front,p)) {
             prqueue_add(front,p);

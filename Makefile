@@ -8,9 +8,9 @@ SFMTDIR=lib/sfmt
 SFMTSRC=$(SFMTDIR)/SFMT.c
 
 CC=gcc
-CFLAGS=-std=c99 -lm -I. -Ilib/dtypes
-TESTFLAGS=-O0 -ggdb -Wall -Wextra -g
-PERFFLAGS=-O3 -march=native -s
+CFLAGS=-std=c99 -lm -I. -Ilib/dtypes -pipe
+TESTFLAGS=-Og -ggdb -Wall -Wextra -g
+PERFFLAGS=-O3 -march=native -s 
 
 MEMTEST=valgrind --tool=memcheck --leak-check=full
 
