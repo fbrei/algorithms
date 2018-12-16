@@ -8,9 +8,11 @@ SFMTDIR=lib/sfmt
 SFMTSRC=$(SFMTDIR)/SFMT.c
 
 CC=gcc
-CFLAGS=-std=c99 -lm -I. -Ilib/dtypes -pipe
+CFLAGS=-std=c11 -I. -Ilib/dtypes -pipe -fstack-protector-strong -D_FORITFY_SOURCE=2 -Wall -Wextra -Werror=format-security -pedantic -fPIE -fpie
+LD=$(CC)
+LFLAGS=-lm -s -Wl,-z,now -Wl,-z,relro -pie
 TESTFLAGS=-Og -ggdb -Wall -Wextra -g
-PERFFLAGS=-O3 -march=native -s 
+PERFFLAGS=-O3 -march=native
 
 MEMTEST=valgrind --tool=memcheck --leak-check=full
 
@@ -38,15 +40,15 @@ vgraph_polygon_test:
 
 vgraph_total_test:
 	mkdir -p obj
-	$(CC) -c $(CFLAGS) $(PERFFLAGS) lib/dtypes/src/darray.c -o obj/darray.o 
-	$(CC) -c $(CFLAGS) $(PERFFLAGS) lib/dtypes/src/dlist.c -o obj/dlist.o 
-	$(CC) -c $(CFLAGS) $(PERFFLAGS) lib/dtypes/src/hset.c -o obj/hset.o 
-	$(CC) -c $(CFLAGS) $(PERFFLAGS) lib/dtypes/src/prqueue.c -o obj/prqueue.o 
-	$(CC) -c $(CFLAGS) $(PERFFLAGS) lib/dtypes/src/graph.c -o obj/graph.o 
-	$(CC) -c $(CFLAGS) $(PERFFLAGS) src/astar.c -o obj/astar.o
-	$(CC) -c $(CFLAGS) $(PERFFLAGS) src/tangents.c -o obj/tangents.o
-	$(CC) -c $(CFLAGS) $(PERFFLAGS) src/vgraph.c -o obj/vgraph.o
-	$(CC) -c $(CFLAGS) $(PERFFLAGS) src/polygons.c -o obj/polygons.o
-	$(CC) -c $(CFLAGS) $(PERFFLAGS) src/test/vgraph_total_test.c -o obj/vgraph_total_test.o
-	$(CC) $(CFLAGS) obj/*.o -o bin/vgraph_total_test
+	$(CC) -c $(PERFFLAGS) lib/dtypes/src/darray.c -o obj/darray.o  $(CFLAGS)
+	$(CC) -c $(PERFFLAGS) lib/dtypes/src/dlist.c -o obj/dlist.o  $(CFLAGS)
+	$(CC) -c $(PERFFLAGS) lib/dtypes/src/hset.c -o obj/hset.o  $(CFLAGS)
+	$(CC) -c $(PERFFLAGS) lib/dtypes/src/prqueue.c -o obj/prqueue.o  $(CFLAGS)
+	$(CC) -c $(PERFFLAGS) lib/dtypes/src/graph.c -o obj/graph.o  $(CFLAGS)
+	$(CC) -c $(PERFFLAGS) src/astar.c -o obj/astar.o $(CFLAGS)
+	$(CC) -c $(PERFFLAGS) src/tangents.c -o obj/tangents.o $(CFLAGS)
+	$(CC) -c $(PERFFLAGS) src/vgraph.c -o obj/vgraph.o $(CFLAGS)
+	$(CC) -c $(PERFFLAGS) src/polygons.c -o obj/polygons.o $(CFLAGS)
+	$(CC) -c $(PERFFLAGS) src/test/vgraph_total_test.c -o obj/vgraph_total_test.o $(CFLAGS)
+	$(LD) obj/*.o -o bin/vgraph_total_test $(LFLAGS)
 	rm -rf obj
