@@ -133,8 +133,8 @@ PolygonalObstacle* convex_hull(DList* map_points) {
   // those that are further away from P0
 
   DList *hull_candidates = dlist_init();
-  double last_score = -9999.9;
-  size_t hull_idx = 0;
+  /* double last_score = -9999.9; */
+  /* size_t hull_idx = 0; */
   for(size_t idx = 0; idx < n_points; idx++) {
     dlist_push(hull_candidates, darray_get(map_points->data,idx));
     /* if(scores[idx] == last_score) { */

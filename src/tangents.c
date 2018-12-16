@@ -515,15 +515,15 @@ DList* tangent_get_blocking(MapPoint *from, MapPoint *to, DList *obstacles, void
     if( (p*p)/4 > q ) {
 
       double min_x = (from->x < to->x) ? from->x : to->x;
-      double min_y = (from->y < to->y) ? from->y : to->y;
+      /* double min_y = (from->y < to->y) ? from->y : to->y; */
 
       double max_x = (from->x < to->x) ? to->x : from->x;
-      double max_y = (from->y < to->y) ? to->y : from->y;
+      /* double max_y = (from->y < to->y) ? to->y : from->y; */
 
       double sqrt_q = sqrt( (p*p)/4.0 - q  );
 
-      double x1 = -p / 2.0 + sqrt_q, y1 = m * x1 + n;
-      double x2 = -p / 2.0 + sqrt_q, y2 = m * x2 + n;
+      double x1 = -p / 2.0 + sqrt_q /* , y1 = m * x1 + n */ ;
+      double x2 = -p / 2.0 + sqrt_q /* , y2 = m * x2 + n */ ;
 
       /* if( (x1 > min_x && x1 < max_x && y1 > min_y && y1 < max_y) || (x2 > min_x && x2 < max_x && y2 > min_y && y2 < max_y) ) { */
       if( (x1 > min_x && x1 < max_x) || (x2 > min_x && x2 < max_x)) {
@@ -552,8 +552,8 @@ void _obstacle_connect_directed_intermediates(CircularObstacle *c, Graph *g, Map
   for(size_t ii = 0; ii < c->_num_map_points; ii++) {
     MapPoint *current = (MapPoint*) darray_get(c->_map_points,ii);
     if(current->is_in == 0) continue;
-    double score_cw, score_ccw;
-    MapPoint *best_cw, *best_ccw;
+    double score_cw = 0.0, score_ccw = 0.0;
+    MapPoint *best_cw = NULL, *best_ccw = NULL;
 
     // Find closest exit in counter-clockwise direction
     for(size_t jj = (ii+1) % num_nodes; jj < c->_num_map_points; jj = (jj+1) % num_nodes)  {

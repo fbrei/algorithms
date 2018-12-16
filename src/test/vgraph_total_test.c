@@ -116,7 +116,7 @@ void random_polygons(DList *polygons, const size_t N_POLYGONS) {
 
     dlist_push(base_points, m);
     size_t n_corners = rand() % (MAX_CORNERS - MIN_CORNERS) + MIN_CORNERS;
-    for(int jj = 0; jj < n_corners; jj++) {
+    for(size_t jj = 0; jj < n_corners; jj++) {
       MapPoint *n = malloc(sizeof(MapPoint));
       n->x = ((double) rand()) / RAND_MAX * 2 * SPREAD - SPREAD + m->x;
       n->y = ((double) rand()) / RAND_MAX * 2 * SPREAD - SPREAD + m->y;
@@ -211,6 +211,7 @@ int main(int argc, const char** argv) {
   /* srand(seed); */
 
   DList *spheres = dlist_init(), *polygons = dlist_init();
+  UNUSED(spheres);
 
   MapPoint *start, *goal;
   start = malloc(sizeof(MapPoint));

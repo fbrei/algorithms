@@ -5,6 +5,8 @@
 #define PRINTDEBUG 0
 
 int compare_to(void* a,void* b) {
+  UNUSED(a);
+  UNUSED(b);
   return 1;
 }
 
@@ -625,7 +627,7 @@ Graph* vgraph_polygonal_obstacles(MapPoint *start, MapPoint *goal, DList *obstac
     for(size_t ii = 0; ii < n_obstacles; ii++) {
       PolygonalObstacle *p = darray_get(obstacles->data,ii);
       size_t n_p_corners = p->corners->num_items;
-      for(int jj = 0; jj < n_p_corners; jj++) {
+      for(size_t jj = 0; jj < n_p_corners; jj++) {
         MapPoint *first = darray_get(p->corners->data,jj);
         MapPoint *second = darray_get(p->corners->data,(jj+1) % n_p_corners);
         if(distance_metric(first,goal) < distance_metric(second,goal)) {
@@ -645,22 +647,16 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
 
   Graph *g = graph_init(GRAPH_DIRECTED);
 
+  UNUSED(start);
+  UNUSED(goal);
+  UNUSED(polygons);
+  UNUSED(spheres);
+  UNUSED(distance_metric);
+
   if(dynamic == 2) {
     
   } else {
     
-    size_t n_spheres = spheres->num_items;
-    size_t n_polys = polygons->num_items;
-
-    for(size_t ii = 0; ii < n_spheres; ii++) {
-      CircularObstacle *c = darray_get(spheres->data, ii);
-      for(size_t jj = 0; jj < n_spheres; jj++) {
-        if(ii == jj) continue;
-      }
-      for(size_t jj = 0; jj < n_polys; jj++) {
-        
-      }
-    }
   }
 
   return g;
