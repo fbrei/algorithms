@@ -646,16 +646,44 @@ Graph* vgraph_polygonal_obstacles(MapPoint *start, MapPoint *goal, DList *obstac
 Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, double (*distance_metric)(void*, void*), const int dynamic) {
 
   Graph *g = graph_init(GRAPH_DIRECTED);
+  graph_add(g,start);
+  graph_add(g,goal);
 
-  UNUSED(start);
-  UNUSED(goal);
-  UNUSED(polygons);
+  // The list of spherical obstacles is not used yet but will
+  // be incorporated later
   UNUSED(spheres);
-  UNUSED(distance_metric);
 
   if(dynamic == 2) {
+
+    /*
+     * 1) Visibility as usual
+     * 2) Given path X-Y-Z, when expanding from Y:
+     *      Try to make X-Z. If blocked, add
+     *      blocking obstacle to Queue of X
+     * For now just polygons
+     */
+    PolygonalObstacle *p = polygon_get_first_blocking(start,goal,polygons,NULL);
+    if(p == NULL) {
+      graph_connect(g,start,goal,distance_metric(start,goal));
+      return g;
+    }
+
+    // The next block should technically belong inside an else
+    // statement but because it is rather lengthy and I did
+    // not want to sacrifice another indentation level just
+    // yet, I decided to just add a return statement to the
+    // branch above
+    PrQueue *local = prqueue_init(compare_to);
+    prqueue_add(local,p);
+
+    while((p = prqueue_pop(local)) != NULL) {
+
+    }
+
     
   } else {
+
+    // This was done by me at work, I forgot to push to the repo ...
     
   }
 

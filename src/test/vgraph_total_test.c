@@ -128,6 +128,38 @@ void random_polygons(DList *polygons, const size_t N_POLYGONS) {
 
 }
 
+
+void evil_test_set(DList *polygons) {
+
+  DList *points = dlist_init();
+  MapPoint *m;
+
+  m = malloc(sizeof(MapPoint));
+  m->x = 10;
+  m->y = 30;
+  dlist_push(points,m);
+
+  m = malloc(sizeof(MapPoint));
+  m->x = 30;
+  m->y = 10;
+  dlist_push(points,m);
+
+  m = malloc(sizeof(MapPoint));
+  m->x = 10;
+  m->y = -10;
+  dlist_push(points,m);
+
+  m = malloc(sizeof(MapPoint));
+  m->x = -10;
+  m->y = 10;
+  dlist_push(points,m);
+
+  PolygonalObstacle *p = malloc(sizeof(PolygonalObstacle));
+  p->corners = points;
+  dlist_push(polygons,p);
+
+}
+
 // Merge overlapping polygons into an and create
 // a new convex hull
 DList* merge_polygons(DList* polygons) {
@@ -269,9 +301,20 @@ int main(int argc, const char** argv) {
   }
 
 
-  /* printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n"); */
-  /* graph_print(g, print_graph_node); */
-  /* printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n"); */
+  // The above method may fail. Now let's try the improved method
+  t1_dyn = clock();
+  g_dyn = vgraph(start,goal,polygons,spheres,euclid_distance,2);
+  t2_dyn = clock();
+
+  fprintf(stderr, "Dynamic method 2.0: %lu\n", t2_dyn - t1_dyn);
+
+  dlist_destroy(polygons,NULL);
+  polygons = dlist_init();
+  evil_test_set(polygons);
+  dump_polygons(polygons);
+  printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
+  graph_print(g_dyn, print_graph_node);
+  printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
 
   return 0;
 }
