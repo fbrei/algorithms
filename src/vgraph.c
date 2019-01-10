@@ -2,7 +2,9 @@
 #include "include/globals.h"
 #include <stdio.h>
 
+#ifndef PRINTDEBUG
 #define PRINTDEBUG 0
+#endif
 
 int compare_to(void* a,void* b) {
   UNUSED(a);
@@ -205,7 +207,7 @@ Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacl
       }
 
 #if PRINTDEBUG == 1
-      fprintf(stderr, "Expanding %p : ", current);
+      fprintf(stderr, "Expanding %p : ", (void*) current);
       print_obstacle(stderr, current);
       fprintf(stderr, "\n");
 #endif
@@ -760,9 +762,6 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
         dlist_push(from->visited_points, to);
 
         // As always, try to make a direct connection first
-        PolygonalObstacle *p = polygon_get_first_blocking(from, to, polygons, NULL);
-        /* if(from->obstacle && p == from->obstacle) continue; */
-        /* if(to->obstacle && p == to->obstacle) continue; */
 
         if(!polygon_is_blocked(from, to, polygons)) {
 #if PRINTDEBUG == 1
@@ -789,15 +788,15 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
           }
         } else {
 
+          PolygonalObstacle *p = polygon_get_first_blocking(from, to, polygons, from->obstacle);
+
 #if PRINTDEBUG == 1
+          if(p) {
             fprintf(stderr, "        Blocked by %p \n", (void*) p);
-            fprintf(stderr, "            From->o: %p \n", (void*) from->obstacle);
-            if(from->obstacle) {
-              PolygonalObstacle *o = (PolygonalObstacle*) from->obstacle;
-              double o_x = ((MapPoint*) darray_get(o->corners->data, 0))->x;
-              double o_y = ((MapPoint*) darray_get(o->corners->data, 0))->y;
-              fprintf(stderr, "              (%g,%g)\n", o_x, o_y);
-            }
+            double p_x = ((MapPoint*) darray_get(p->corners->data, 0))->x;
+            double p_y = ((MapPoint*) darray_get(p->corners->data, 0))->y;
+            fprintf(stderr, "              (%g,%g)\n", p_x, p_y);
+          }
 #endif
 
           // Do the whole expansion process as above in the other method, starting from the
@@ -813,14 +812,26 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
             } else {
               hset_add(local_explored, p);
             }
+
+#if PRINTDEBUG == 1
+            double p_x = ((MapPoint*) darray_get(p->corners->data, 0))->x;
+            double p_y = ((MapPoint*) darray_get(p->corners->data, 0))->y;
+            fprintf(stderr, "       Current obstacle: (%g,%g)\n", p_x, p_y);
+#endif
+
       
             if(p == from->obstacle) continue;
 
             for(size_t ii = 0; ii < p->corners->num_items; ii++) {
+
               MapPoint *corner = darray_get(p->corners->data, ii);
 
+#if PRINTDEBUG == 1
+              fprintf(stderr, "      Trying to reach (%g,%g)\n", corner->x, corner->y);
+#endif
 
               if(!polygon_is_blocked(from, corner, polygons)) {
+
                 // Update forward
                 if(graph_get_edge_weight(g, from, corner)) continue;
 
@@ -843,7 +854,7 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
                   prqueue_add(global, origin);
                 }
               } else {
-                PolygonalObstacle *block = polygon_get_first_blocking(from, corner, polygons, NULL);
+                PolygonalObstacle *block = polygon_get_first_blocking(from, corner, polygons, from->obstacle);
                 if(block != p && block != from->obstacle && !prqueue_contains(local, block)) {
                   prqueue_add(local, block);
                 }

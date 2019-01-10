@@ -325,13 +325,13 @@ int main(int argc, const char** argv) {
 
   UNUSED(N_POLYGONS);
   // Example I chose for the comparison plot
-  clock_t seed = 1546981252;
+  /* clock_t seed = 1546981252; */
 
   // Test for correctness
   /* clock_t seed = 1547149155; */
 
   // Default
-  /* clock_t seed = time(0); */
+  clock_t seed = time(0);
 
 
   srand(seed);
