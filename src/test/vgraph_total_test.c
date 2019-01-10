@@ -8,6 +8,9 @@
 #include <stdio.h>
 #include <time.h>
 
+#define RUN_FULL 1
+#define RUN_DYNAMIC 1
+
 // =========================================================
 
 void print_graph_node(void* v) {
@@ -106,7 +109,7 @@ void random_polygons(DList *polygons, const size_t N_POLYGONS) {
 
   const double WIDTH = 90;
   const double MIN_COORD = -45;
-  const double SPREAD = 1.0;
+  const double SPREAD = 5.0;
 
   for(size_t ii = 0; ii < N_POLYGONS; ii++) {
     DList *base_points = dlist_init();
@@ -131,30 +134,103 @@ void random_polygons(DList *polygons, const size_t N_POLYGONS) {
 
 void evil_test_set(DList *polygons) {
 
-  DList *points = dlist_init();
+  DList *points;
   MapPoint *m;
+  PolygonalObstacle *p;
+
+  // =========================================================
+
+  p = malloc(sizeof(PolygonalObstacle));
+  points = dlist_init();
 
   m = malloc(sizeof(MapPoint));
   m->x = 10;
   m->y = 30;
+  m->obstacle = p;
   dlist_push(points,m);
 
   m = malloc(sizeof(MapPoint));
   m->x = 30;
   m->y = 10;
+  m->obstacle = p;
   dlist_push(points,m);
 
   m = malloc(sizeof(MapPoint));
   m->x = 10;
   m->y = -10;
+  m->obstacle = p;
   dlist_push(points,m);
 
   m = malloc(sizeof(MapPoint));
   m->x = -10;
   m->y = 10;
+  m->obstacle = p;
   dlist_push(points,m);
 
-  PolygonalObstacle *p = malloc(sizeof(PolygonalObstacle));
+  p->corners = points;
+  dlist_push(polygons,p);
+
+  // =========================================================
+
+  p = malloc(sizeof(PolygonalObstacle));
+  points = dlist_init();
+
+  m = malloc(sizeof(MapPoint));
+  m->x = -21;
+  m->y = 16;
+  m->obstacle = p;
+  dlist_push(points,m);
+
+  m = malloc(sizeof(MapPoint));
+  m->x = -4;
+  m->y = -1;
+  m->obstacle = p;
+  dlist_push(points,m);
+
+  m = malloc(sizeof(MapPoint));
+  m->x = -10;
+  m->y = -7;
+  m->obstacle = p;
+  dlist_push(points,m);
+
+  m = malloc(sizeof(MapPoint));
+  m->x = -27;
+  m->y = 10;
+  m->obstacle = p;
+  dlist_push(points,m);
+
+  p->corners = points;
+  dlist_push(polygons,p);
+
+  // =========================================================
+
+  p = malloc(sizeof(PolygonalObstacle));
+  points = dlist_init();
+
+  m = malloc(sizeof(MapPoint));
+  m->x = -1;
+  m->y = -4;
+  m->obstacle = p;
+  dlist_push(points,m);
+
+  m = malloc(sizeof(MapPoint));
+  m->x = 30;
+  m->y = -35;
+  m->obstacle = p;
+  dlist_push(points,m);
+
+  m = malloc(sizeof(MapPoint));
+  m->x = 10;
+  m->y = -55;
+  m->obstacle = p;
+  dlist_push(points,m);
+
+  m = malloc(sizeof(MapPoint));
+  m->x = -21;
+  m->y = -24;
+  m->obstacle = p;
+  dlist_push(points,m);
+
   p->corners = points;
   dlist_push(polygons,p);
 
@@ -206,6 +282,13 @@ DList* merge_polygons(DList* polygons) {
     }
   }
 
+  for(size_t ii = 0; ii < new_polygons->num_items; ii++) {
+    PolygonalObstacle *p = darray_get(new_polygons->data, ii);
+    for(size_t jj = 0; jj < p->corners->num_items; jj++) {
+      MapPoint *m = darray_get(p->corners->data, jj);
+      m->obstacle = p;
+    }
+  }
   return new_polygons;
 }
 
@@ -231,16 +314,28 @@ void dump_polygons(DList *polygons) {
 
 int main(int argc, const char** argv) {
 
+  size_t N_POLYGONS;
   if(argc < 2) {
-    fprintf(stderr, "Please provide a number of obstacles\n");
-    return EXIT_FAILURE;
+    /* fprintf(stderr, "Please provide a number of obstacles\n"); */
+    N_POLYGONS = 20;
+    /* return EXIT_FAILURE; */
+  } else {
+    N_POLYGONS = atol(argv[1]);
   }
 
-  const size_t N_POLYGONS = atol(argv[1]);
-  srand(1234);
+  UNUSED(N_POLYGONS);
+  // Example I chose for the comparison plot
+  clock_t seed = 1546981252;
+
+  // Test for correctness
+  /* clock_t seed = 1547149155; */
+
+  // Default
   /* clock_t seed = time(0); */
-  /* fprintf(stderr, "Seed: %lu\n", seed); */
-  /* srand(seed); */
+
+
+  srand(seed);
+  fprintf(stderr, "Seed: %lu\n", seed);
 
   DList *spheres = dlist_init(), *polygons = dlist_init();
   UNUSED(spheres);
@@ -249,72 +344,105 @@ int main(int argc, const char** argv) {
   start = malloc(sizeof(MapPoint));
   start->x = 50;
   start->y = 50;
+  start->obstacle = NULL;
 
   goal = malloc(sizeof(MapPoint));
   goal->x = -50;
   goal->y = -50;
+  goal->obstacle = NULL;
 
   random_polygons(polygons, N_POLYGONS);
   polygons = merge_polygons(polygons);
 
+  /* evil_test_set(polygons); */
 
-  clock_t t1_full, t2_full, t1_dyn, t2_dyn;
-  AStarPathNode *p_full, *p_dyn;
-  Graph *g_full, *g_dyn;
+#if RUN_FULL == 1
 
-  /* fprintf(stderr, "Full\n"); */
-  /* fprintf(stderr, "====\n"); */
+  clock_t t1_full, t2_full;
+  AStarPathNode *p_full;
+  Graph *g_full;
+
+  fprintf(stderr, "Full\n");
+  fprintf(stderr, "====\n");
 
   t1_full = clock();
   g_full = vgraph_polygonal_obstacles(start,goal,polygons,euclid_distance,0);
   p_full = astar(g_full, start, goal, euclid_distance, hash);
   t2_full = clock();
 
+  fprintf(stderr, "Path length: %g\n", p_full->total_dist);
+  fprintf(stderr, "Time; %luus\n", t2_full-t1_full);
+
+  fprintf(stderr, "\n");
+
+#endif
+
+#if RUN_DYNAMIC == 1
+  fprintf(stderr, "Dynamic\n");
+  fprintf(stderr, "=======\n");
+
+  /* t1_dyn = clock(); */
+  /* g_dyn = vgraph_polygonal_obstacles(start,goal,polygons,euclid_distance,2); */
+  /* p_dyn = astar(g_dyn, start, goal, euclid_distance, hash); */
+  /* t2_dyn = clock(); */
+
   /* fprintf(stderr, "Path length: %g\n", p->total_dist); */
   /* fprintf(stderr, "Time; %luus\n", t2-t1); */
-  /*  */
-  /* fprintf(stderr, "\n"); */
-  /* fprintf(stderr, "Dynamic\n"); */
-  /* fprintf(stderr, "=======\n"); */
 
-  t1_dyn = clock();
-  g_dyn = vgraph_polygonal_obstacles(start,goal,polygons,euclid_distance,2);
-  p_dyn = astar(g_dyn, start, goal, euclid_distance, hash);
-  t2_dyn = clock();
 
-  /* fprintf(stderr, "Path length: %g\n", p->total_dist); */
-  /* fprintf(stderr, "Time; %luus\n", t2-t1); */
-
-  /* printf("Full path:\n"); */
-  /* while(p) { */
-  /*   print_graph_node(p->data); */
-  /*   printf("\n"); */
-  /*   p = p->parent; */
+  /* if(p_full->total_dist == p_dyn->total_dist) { */
+  /*   printf("%lu %lu %lu\n", polygons->num_items, t2_full - t1_full, t2_dyn - t1_dyn); */
+  /* } else { */
+  /*   [> fprintf(stderr, "%g %g\n", p_full->total_dist, p_dyn->total_dist); <] */
+  /*   printf("FAIL\n"); */
   /* } */
 
+  /* fprintf(stderr, "Dynamic method 2.0: %lu\n", t2_dyn - t1_dyn); */
 
-  if(p_full->total_dist == p_dyn->total_dist) {
-    printf("%lu %lu %lu\n", polygons->num_items, t2_full - t1_full, t2_dyn - t1_dyn);
-  } else {
-    /* fprintf(stderr, "%g %g\n", p_full->total_dist, p_dyn->total_dist); */
-    printf("FAIL\n");
-  }
+  /* dlist_destroy(polygons,NULL); */
+  /* polygons = dlist_init(); */
 
+  /* dump_polygons(polygons); */
 
   // The above method may fail. Now let's try the improved method
+  clock_t t1_dyn, t2_dyn;
+  AStarPathNode *p_dyn;
+  Graph *g_dyn;
+
   t1_dyn = clock();
   g_dyn = vgraph(start,goal,polygons,spheres,euclid_distance,2);
+  p_dyn = astar(g_dyn, start, goal, euclid_distance, hash);
   t2_dyn = clock();
+  fprintf(stderr, "Path length: %g\n", p_dyn->total_dist);
+  fprintf(stderr, "Time; %luus\n", t2_dyn-t1_dyn);
 
-  fprintf(stderr, "Dynamic method 2.0: %lu\n", t2_dyn - t1_dyn);
+#endif
 
-  dlist_destroy(polygons,NULL);
-  polygons = dlist_init();
-  evil_test_set(polygons);
-  dump_polygons(polygons);
+#ifdef _PRINT_GRAPH
+  printf("Dynamic\n");
+  printf("Full path:\n");
+  while(p_dyn) {
+    print_graph_node(p_dyn->data);
+    printf("\n");
+    p_dyn = p_dyn->parent;
+  }
   printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
   graph_print(g_dyn, print_graph_node);
   printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
+
+#if RUN_FULL == 1
+  printf("\n\n\n");
+  printf("Full path:\n");
+  while(p_full) {
+    print_graph_node(p_full->data);
+    printf("\n");
+    p_full = p_full->parent;
+  }
+  printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
+  graph_print(g_full, print_graph_node);
+  printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
+#endif
+#endif
 
   return 0;
 }

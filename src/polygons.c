@@ -194,6 +194,10 @@ PolygonalObstacle* convex_hull(DList* map_points) {
 
   PolygonalObstacle *p = malloc(sizeof(PolygonalObstacle));
   p->corners = hull;
+  for(size_t ii = 0; ii < hull->num_items; ii++) {
+    ((MapPoint*) darray_get(hull->data, ii))->obstacle = p;
+  }
+
   return p;
 
 }
