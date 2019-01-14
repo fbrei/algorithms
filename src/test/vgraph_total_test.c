@@ -7,6 +7,11 @@
 #include <math.h>
 #include <stdio.h>
 #include <time.h>
+#include <string.h>
+
+#include <getopt.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #define RUN_FULL 1
 #define RUN_DYNAMIC 1
@@ -109,7 +114,7 @@ void random_polygons(DList *polygons, const size_t N_POLYGONS) {
 
   const double WIDTH = 90;
   const double MIN_COORD = -45;
-  const double SPREAD = 5.0;
+  const double SPREAD = 2.0;
 
   for(size_t ii = 0; ii < N_POLYGONS; ii++) {
     DList *base_points = dlist_init();
@@ -312,18 +317,69 @@ void dump_polygons(DList *polygons) {
 
 // =========================================================
 
-int main(int argc, const char** argv) {
+void print_help() {
+  printf("Usage: bin/vgraph_total_test [-n number of obstacles] [-s seed] [-o outfile] [-v] [-h]\n");
+  printf("    -n : The number of obstacles that shall be randomly generated. \n");
+  printf("         Note that the real number will be a bit lower due to merging\n");
+  printf("         (defaults to 20).\n");
+  printf("    -s : The seed value for the RNG. Default is time(0).\n");
+  printf("    -o : File name that the graph should be written to.\n");
+  printf("    -v : Display some more output for the dynamic method. Subject to change.\n");
+  printf("    -h : Display this help.\n");
+}
 
-  size_t N_POLYGONS;
-  if(argc < 2) {
-    /* fprintf(stderr, "Please provide a number of obstacles\n"); */
-    N_POLYGONS = 20;
-    /* return EXIT_FAILURE; */
-  } else {
-    N_POLYGONS = atol(argv[1]);
+int main(int argc, char** argv) {
+
+  size_t N_POLYGONS = 20;
+  short VERBOSE = 0;
+  clock_t seed = time(0);
+
+  // Use getopt to parse the arguments from the command line
+  extern char* optarg;
+  extern int optind;
+  short n_set = 0, h_set = 0, o_set = 0;
+  char* outfile_name = NULL;
+  short rc = 0, err = 0;
+
+  while((rc = getopt(argc, argv, "vhn:s:o:")) != -1) {
+    switch(rc) {
+      case 'v':
+        VERBOSE++;
+        break;
+      case 'h':
+        h_set = 1;
+        break;
+      case 'n':
+        n_set = 1;
+        N_POLYGONS = atol(optarg);
+        break;
+      case 's':
+        seed = atol(optarg);
+        break;
+      case 'o':
+        o_set = 1;
+        size_t slen = strlen(optarg);
+        outfile_name = malloc((slen+1) * sizeof(char));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wall"
+        strncpy(outfile_name, optarg, (slen+1) > 512 ? 512 : slen+1);
+#pragma GCC diagnostic pop
+        outfile_name[slen] = 0x0;
+        break;
+      default:
+        err = 1;
+    }
   }
 
-  UNUSED(N_POLYGONS);
+  if(err == 1 || h_set == 1) {
+    print_help();
+    return err;
+  }
+
+  if(n_set == 0) {
+    N_POLYGONS = 20;
+  }
+
   // Example I chose for the comparison plot
   /* clock_t seed = 1546981252; */
 
@@ -331,11 +387,8 @@ int main(int argc, const char** argv) {
   /* clock_t seed = 1547149155; */
 
   // Default
-  clock_t seed = time(0);
-
 
   srand(seed);
-  fprintf(stderr, "Seed: %lu\n", seed);
 
   DList *spheres = dlist_init(), *polygons = dlist_init();
   UNUSED(spheres);
@@ -356,30 +409,16 @@ int main(int argc, const char** argv) {
 
   /* evil_test_set(polygons); */
 
-#if RUN_FULL == 1
-
   clock_t t1_full, t2_full;
   AStarPathNode *p_full;
   Graph *g_full;
-
-  fprintf(stderr, "Full\n");
-  fprintf(stderr, "====\n");
 
   t1_full = clock();
   g_full = vgraph_polygonal_obstacles(start,goal,polygons,euclid_distance,0);
   p_full = astar(g_full, start, goal, euclid_distance, hash);
   t2_full = clock();
 
-  fprintf(stderr, "Path length: %g\n", p_full->total_dist);
-  fprintf(stderr, "Time; %luus\n", t2_full-t1_full);
-
-  fprintf(stderr, "\n");
-
-#endif
-
-#if RUN_DYNAMIC == 1
-  fprintf(stderr, "Dynamic\n");
-  fprintf(stderr, "=======\n");
+  /* fprintf(stderr, "\n"); */
 
   /* t1_dyn = clock(); */
   /* g_dyn = vgraph_polygonal_obstacles(start,goal,polygons,euclid_distance,2); */
@@ -410,39 +449,51 @@ int main(int argc, const char** argv) {
   Graph *g_dyn;
 
   t1_dyn = clock();
-  g_dyn = vgraph(start,goal,polygons,spheres,euclid_distance,2);
+  g_dyn = vgraph(start,goal,polygons,spheres,euclid_distance,2, VERBOSE);
   p_dyn = astar(g_dyn, start, goal, euclid_distance, hash);
   t2_dyn = clock();
-  fprintf(stderr, "Path length: %g\n", p_dyn->total_dist);
-  fprintf(stderr, "Time; %luus\n", t2_dyn-t1_dyn);
 
-#endif
-
-#ifdef _PRINT_GRAPH
-  printf("Dynamic\n");
-  printf("Full path:\n");
-  while(p_dyn) {
-    print_graph_node(p_dyn->data);
+  if(VERBOSE) {
+    printf("======================\n");
+    printf("Meta information:\n");
+    printf("----------------------\n");
+    printf("   Seed: %lu\n", seed);
+    printf("   Number of obstacles: %lu\n", polygons->num_items);
+    printf("======================\n");
     printf("\n");
-    p_dyn = p_dyn->parent;
-  }
-  printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
-  graph_print(g_dyn, print_graph_node);
-  printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
 
-#if RUN_FULL == 1
-  printf("\n\n\n");
-  printf("Full path:\n");
-  while(p_full) {
-    print_graph_node(p_full->data);
+    printf("Full\n");
+    printf("======================\n");
+
+    printf("Path length: %g\n", p_full->total_dist);
+    printf("Time; %luus\n", t2_full-t1_full);
+
     printf("\n");
-    p_full = p_full->parent;
+
+    printf("Dynamic\n");
+    printf("======================\n");
+
+    printf("Path length: %g\n", p_dyn->total_dist);
+    printf("Time; %luus\n", t2_dyn-t1_dyn);
+  } else {
+    printf("%lu %lu %lu\n", polygons->num_items, t2_dyn - t1_dyn, t2_full - t1_full);
   }
-  printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
-  graph_print(g_full, print_graph_node);
-  printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
-#endif
-#endif
+
+  if(o_set) {
+    freopen(outfile_name, "w", stdout);
+    printf("Full path:\n");
+    while(p_dyn) {
+      print_graph_node(p_dyn->data);
+      printf("\n");
+      p_dyn = p_dyn->parent;
+    }
+    printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
+    graph_print(g_dyn, print_graph_node);
+    printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
+  }
+
+  UNUSED(p_dyn);
+  UNUSED(p_full);
 
   return 0;
 }

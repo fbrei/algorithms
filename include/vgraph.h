@@ -48,6 +48,7 @@ Graph* vgraph(MapPoint *start,
     DList *polygons,
     DList *spheres,
     double (*distance_metric)(void*, void*),
-    const int dynamic);
+    const int dynamic,
+    short verbose);
 
 #endif /* end of include guard: VGRAPH_H_AWDEVYPA */

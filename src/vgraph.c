@@ -678,7 +678,7 @@ void add_source_point(MapPoint *current, MapPoint *new_origin, PrQueue *global) 
 
 }
 
-Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, double (*distance_metric)(void*, void*), const int dynamic) {
+Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, double (*distance_metric)(void*, void*), const int dynamic, short VERBOSE) {
 
   Graph *g = graph_init(GRAPH_DIRECTED);
   graph_add(g,start);
@@ -721,11 +721,12 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
     // Get the next item on the todo list
     while((from = prqueue_pop(global)) != NULL) {
 
-      if(from == goal) continue;
 
-#if PRINTDEBUG == 1
-      fprintf(stderr, "Checking (%g,%g)\n", from->x, from->y);
-#endif
+if(VERBOSE >= 2) {
+      fprintf(stderr, "Checking (%g,%g) -> %lu nodes to inspect\n", from->x, from->y, from->local_queue->num_items);
+}
+
+      if(from == goal || from->local_queue->num_items == 0) continue;
 
       if(from->obstacle != NULL && from->local_queue->num_items  > 0) {
         PolygonalObstacle *p = from->obstacle;
@@ -752,9 +753,9 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
 
         if(from->obstacle && from->obstacle == to->obstacle) continue;
 
-#if PRINTDEBUG == 1
+if(VERBOSE >= 2) {
         fprintf(stderr, "    Trying to reach (%g,%g)\n", to->x, to->y);
-#endif
+}
 
         if(darray_find(from->visited_points->data, to) > -1) {
           continue;
@@ -764,9 +765,9 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
         // As always, try to make a direct connection first
 
         if(!polygon_is_blocked(from, to, polygons)) {
-#if PRINTDEBUG == 1
+if(VERBOSE >= 2) {
           fprintf(stderr, "        Connection is possible!\n");
-#endif
+}
           // Update forward
           if(graph_get_edge_weight(g, from, to)) continue;
 
@@ -775,14 +776,14 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
           add_source_point(to, from, global);
 
           // Update backward
-#if PRINTDEBUG == 1
+if(VERBOSE >= 2) {
           fprintf(stderr, "      Need to update %lu origins ...\n", from->origins->num_items);
-#endif
+}
           for(size_t ii = 0; ii < from->origins->num_items; ii++) {
             MapPoint *origin = darray_get(from->origins->data, ii);
-#if PRINTDEBUG == 1
+if(VERBOSE >= 2) {
             fprintf(stderr, "        Updating origin point: (%g,%g)\n", origin->x, origin->y);
-#endif
+}
           
             update_queues(origin, to, global);
           }
@@ -790,14 +791,14 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
 
           PolygonalObstacle *p = polygon_get_first_blocking(from, to, polygons, from->obstacle);
 
-#if PRINTDEBUG == 1
+if(VERBOSE >= 2) {
           if(p) {
             fprintf(stderr, "        Blocked by %p \n", (void*) p);
             double p_x = ((MapPoint*) darray_get(p->corners->data, 0))->x;
             double p_y = ((MapPoint*) darray_get(p->corners->data, 0))->y;
             fprintf(stderr, "              (%g,%g)\n", p_x, p_y);
           }
-#endif
+}
 
           // Do the whole expansion process as above in the other method, starting from the
           // current point
@@ -813,11 +814,11 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
               hset_add(local_explored, p);
             }
 
-#if PRINTDEBUG == 1
+if(VERBOSE >= 2) {
             double p_x = ((MapPoint*) darray_get(p->corners->data, 0))->x;
             double p_y = ((MapPoint*) darray_get(p->corners->data, 0))->y;
             fprintf(stderr, "       Current obstacle: (%g,%g)\n", p_x, p_y);
-#endif
+}
 
       
             if(p == from->obstacle) continue;
@@ -826,18 +827,18 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
 
               MapPoint *corner = darray_get(p->corners->data, ii);
 
-#if PRINTDEBUG == 1
+if(VERBOSE >= 2) {
               fprintf(stderr, "      Trying to reach (%g,%g)\n", corner->x, corner->y);
-#endif
+}
 
               if(!polygon_is_blocked(from, corner, polygons)) {
 
                 // Update forward
                 if(graph_get_edge_weight(g, from, corner)) continue;
 
-#if PRINTDEBUG == 1
+if(VERBOSE >= 2) {
                 fprintf(stderr, "        Connecting to (%g,%g)!\n", corner->x, corner->y);
-#endif
+}
                 graph_connect(g, from, corner, distance_metric(from,corner));
 
                 prqueue_add(global, corner);
@@ -847,9 +848,9 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
                 // Update backward
                 for(size_t jj = 0; jj < from->origins->num_items; jj++) {
                   MapPoint *origin = darray_get(from->origins->data, jj);
-#if PRINTDEBUG == 1
+if(VERBOSE >= 2) {
                   fprintf(stderr, "        Updating origin point: (%g,%g)\n", origin->x, origin->y);
-#endif
+}
                   update_queues(origin, corner, global);
                   prqueue_add(global, origin);
                 }
