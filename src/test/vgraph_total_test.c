@@ -360,10 +360,7 @@ int main(int argc, char** argv) {
         o_set = 1;
         size_t slen = strlen(optarg);
         outfile_name = malloc((slen+1) * sizeof(char));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wall"
-        strncpy(outfile_name, optarg, (slen+1) > 512 ? 512 : slen+1);
-#pragma GCC diagnostic pop
+        memcpy(outfile_name, optarg, slen);
         outfile_name[slen] = 0x0;
         break;
       default:
