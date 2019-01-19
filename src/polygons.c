@@ -201,3 +201,26 @@ PolygonalObstacle* convex_hull(DList* map_points) {
   return p;
 
 }
+
+double polygon_area(PolygonalObstacle *p) {
+  
+  double total_area = 0.0l;
+  for(size_t ii = 0; ii < p->corners->num_items; ii++) {
+    MapPoint *from = darray_get(p->corners->data, ii);
+    MapPoint *to = darray_get(p->corners->data, (ii+1) % p->corners->num_items);
+
+    total_area += (from->x * to->y - from->y * to->x);
+  }
+
+  return fabs(total_area) / 2.0;
+}
+
+double polygon_map_covered(DList *polygons, double width, double height) {
+
+  double occupied = 0.0l;
+  for(size_t idx = 0; idx < polygons->num_items; idx++) {
+    occupied += polygon_area(darray_get(polygons->data, idx));
+  }
+
+  return occupied / (width * height);
+}

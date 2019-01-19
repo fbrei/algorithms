@@ -47,4 +47,28 @@ PolygonalObstacle* polygon_get_first_blocking(MapPoint* from, MapPoint* to, DLis
 
 PolygonalObstacle* convex_hull(DList* map_points);
 
+/**
+ * \brief Calculates the area of a polygon.
+ *
+ * Note that this only works if the polygon contains no twists or
+ * overlaps itself
+ * 
+ * \param *p The polygon of which the area should be calculated
+ * \return The area of the given polygon
+ */
+double polygon_area(PolygonalObstacle *p);
+
+
+/**
+ * \brief Calculates the percentage of map that is covered
+ *
+ * See short descr.
+ * 
+ * \param *polygons The list of all polygons
+ * \param width The width of the map
+ * \param height The height of the map
+ * \return Percentage of covered area (0..1)
+ */
+double polygon_map_covered(DList *polygons, double width, double height);
+
 #endif /* end of include guard: POLYGONS_H_MQ7DFOAE */
