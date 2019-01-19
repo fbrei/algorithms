@@ -54,6 +54,7 @@ MapPoint* random_point() {
   MapPoint *m = malloc(sizeof(MapPoint));
   m->x = (((double) rand()) / RAND_MAX) * 80 - 40;
   m->y = (((double) rand()) / RAND_MAX) * 80 - 40;
+  m->shortest_length = 9999999999.9l;
 
   return m;
 }
@@ -114,13 +115,14 @@ void random_polygons(DList *polygons, const size_t N_POLYGONS) {
 
   const double WIDTH = 90;
   const double MIN_COORD = -45;
-  const double SPREAD = 2.0;
+  const double SPREAD = 120 / N_POLYGONS;
 
   for(size_t ii = 0; ii < N_POLYGONS; ii++) {
     DList *base_points = dlist_init();
     MapPoint *m = malloc(sizeof(MapPoint));
     m->x = (((double) rand()) / RAND_MAX) * WIDTH + MIN_COORD;
     m->y = (((double) rand()) / RAND_MAX) * WIDTH + MIN_COORD;
+    m->shortest_length = 9999999999.9l;
 
     dlist_push(base_points, m);
     size_t n_corners = rand() % (MAX_CORNERS - MIN_CORNERS) + MIN_CORNERS;
@@ -129,6 +131,7 @@ void random_polygons(DList *polygons, const size_t N_POLYGONS) {
       n->x = ((double) rand()) / RAND_MAX * 2 * SPREAD - SPREAD + m->x;
       n->y = ((double) rand()) / RAND_MAX * 2 * SPREAD - SPREAD + m->y;
       dlist_push(base_points, n);
+      n->shortest_length = 9999999999.9l;
     }
 
     dlist_push(polygons, convex_hull(base_points));
@@ -400,6 +403,7 @@ int main(int argc, char** argv) {
   goal->x = -50;
   goal->y = -50;
   goal->obstacle = NULL;
+  goal->shortest_length = 9999999999.9l;
 
   random_polygons(polygons, N_POLYGONS);
   polygons = merge_polygons(polygons);
@@ -451,16 +455,17 @@ int main(int argc, char** argv) {
   t2_dyn = clock();
 
   if(VERBOSE) {
-    printf("======================\n");
+    printf("====================================\n");
     printf("Meta information:\n");
     printf("----------------------\n");
     printf("   Seed: %lu\n", seed);
     printf("   Number of obstacles: %lu\n", polygons->num_items);
-    printf("======================\n");
+    printf("   Percentage of map covered: %g\n", polygon_map_covered(polygons, 100, 100));
+    printf("====================================\n");
     printf("\n");
 
     printf("Full\n");
-    printf("======================\n");
+    printf("====================================\n");
 
     printf("Path length: %g\n", p_full->total_dist);
     printf("Time; %luus\n", t2_full-t1_full);
@@ -468,7 +473,7 @@ int main(int argc, char** argv) {
     printf("\n");
 
     printf("Dynamic\n");
-    printf("======================\n");
+    printf("====================================\n");
 
     printf("Path length: %g\n", p_dyn->total_dist);
     printf("Time; %luus\n", t2_dyn-t1_dyn);

@@ -19,6 +19,7 @@ typedef struct _MapPoint {
   PrQueue *local_queue; /**< List of map points that should be tried to be reached. */
   void *obstacle; /**< The obstacle that this point is sitting on (if any). Should be set to NULL otherwise. */
   DList *visited_points; /**< List of points that this map point has tried to reach so far. */
+  double shortest_length; /**< The shortest path length to this point so far */
 } MapPoint;
 
 
