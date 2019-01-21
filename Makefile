@@ -53,6 +53,21 @@ vgraph_total_test:
 	$(LD) obj/*.o -o bin/vgraph_total_test -lm
 	rm -rf obj
 
+line_sections_test:
+	mkdir -p obj
+	$(CC) -c $(TESTFLAGS) lib/dtypes/src/darray.c -o obj/darray.o  $(CFLAGS)
+	$(CC) -c $(TESTFLAGS) lib/dtypes/src/dlist.c -o obj/dlist.o  $(CFLAGS)
+	$(CC) -c $(TESTFLAGS) lib/dtypes/src/hset.c -o obj/hset.o  $(CFLAGS)
+	$(CC) -c $(TESTFLAGS) lib/dtypes/src/prqueue.c -o obj/prqueue.o  $(CFLAGS)
+	$(CC) -c $(TESTFLAGS) lib/dtypes/src/graph.c -o obj/graph.o  $(CFLAGS)
+	$(CC) -c $(TESTFLAGS) src/astar.c -o obj/astar.o $(CFLAGS)
+	$(CC) -c $(TESTFLAGS) src/tangents.c -o obj/tangents.o $(CFLAGS)
+	$(CC) -c $(TESTFLAGS) src/vgraph.c -o obj/vgraph.o $(CFLAGS)
+	$(CC) -c $(TESTFLAGS) src/polygons.c -o obj/polygons.o $(CFLAGS)
+	$(CC) -c $(TESTFLAGS) src/test/line_sections_test.c -o obj/line_sections_test.o $(CFLAGS)
+	$(LD) obj/*.o -o bin/line_sections_test -lm
+	rm -rf obj
+
 measurement:
 	mkdir -p obj
 	$(CC) -c $(PERFFLAGS) lib/dtypes/src/darray.c -o obj/darray.o  $(CFLAGS)
@@ -66,3 +81,4 @@ measurement:
 	$(CC) -c $(PERFFLAGS) src/polygons.c -o obj/polygons.o $(CFLAGS)
 	$(CC) -c $(PERFFLAGS) src/test/vgraph_total_test.c -o obj/vgraph_total_test.o $(CFLAGS)
 	$(LD) obj/*.o -o bin/vgraph_total_test -lm
+	rm -rf obj

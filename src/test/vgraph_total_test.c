@@ -252,17 +252,17 @@ DList* merge_polygons(DList* polygons) {
   DList *new_polygons = polygons;
 
   while(merged) {
+
     merged = 0;
+
+    fprintf(stderr, "%lu\n", new_polygons->num_items);
 
     for(size_t ii = 0; ii < new_polygons->num_items; ii++) {
       PolygonalObstacle *p = darray_get(new_polygons->data, ii);
+      for(size_t jj = ii+1; jj < new_polygons->num_items; jj++) {
+        PolygonalObstacle *o = darray_get(new_polygons->data, jj);
 
-      for(size_t jj = 0; jj < p->corners->num_items; jj++) {
-        MapPoint *from = darray_get(p->corners->data,jj);
-        MapPoint *to = darray_get(p->corners->data,(jj+1) % p->corners->num_items);
-
-        PolygonalObstacle *o = polygon_get_first_blocking(from,to,new_polygons,p);
-        if(o != NULL) {
+        if(polygon_overlapping(p, o)) {
           DList *points = dlist_init();
           for(size_t kk = 0; kk < p->corners->num_items; kk++) {
             dlist_push(points, darray_get(p->corners->data,kk));
@@ -286,8 +286,42 @@ DList* merge_polygons(DList* polygons) {
           break;
         }
       }
+
       if(merged) break;
     }
+  /*   for(size_t ii = 0; ii < new_polygons->num_items; ii++) { */
+  /*     PolygonalObstacle *p = darray_get(new_polygons->data, ii); */
+  /*     for(size_t jj = 0; jj < p->corners->num_items; jj++) { */
+  /*       MapPoint *from = darray_get(p->corners->data,jj); */
+  /*       MapPoint *to = darray_get(p->corners->data,(jj+1) % p->corners->num_items); */
+  /*  */
+  /*       PolygonalObstacle *o = polygon_get_first_blocking(from,to,new_polygons,p); */
+  /*       if(o != NULL) { */
+  /*         DList *points = dlist_init(); */
+  /*         for(size_t kk = 0; kk < p->corners->num_items; kk++) { */
+  /*           dlist_push(points, darray_get(p->corners->data,kk)); */
+  /*         } */
+  /*         for(size_t kk = 0; kk < o->corners->num_items; kk++) { */
+  /*           dlist_push(points, darray_get(o->corners->data,kk)); */
+  /*         } */
+  /*  */
+  /*         PolygonalObstacle *tmp = convex_hull(points); */
+  /*         DList *new_new_polygons = dlist_init(); */
+  /*         dlist_push(new_new_polygons, tmp); */
+  /*  */
+  /*         for(size_t kk = 0; kk < new_polygons->num_items; kk++) { */
+  /*           PolygonalObstacle *l = darray_get(new_polygons->data, kk); */
+  /*           if(l != o && l != p) */
+  /*             dlist_push(new_new_polygons,l); */
+  /*         } */
+  /*         new_polygons = new_new_polygons; */
+  /*         merged = 1; */
+  /*  */
+  /*         break; */
+  /*       } */
+  /*     } */
+  /*     if(merged) break; */
+  /*   } */
   }
 
   for(size_t ii = 0; ii < new_polygons->num_items; ii++) {

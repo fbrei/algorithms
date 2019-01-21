@@ -4,6 +4,63 @@
 #include <math.h>
 #define M_PI 3.1415926535897932
 
+unsigned short _lines_intersect(MapPoint *from_a, MapPoint *to_a, MapPoint *from_b, MapPoint *to_b) {
+
+  // First line: A. First coordinates (x0,y0), go (x1,y1)
+  // lines parametric: (x0,y0) + r*(dx,dy), where r is in [0,1]
+  
+  double x0_a = from_a->x,
+         y0_a = from_a->y,
+         x1_a = to_a->x,
+         y1_a = to_a->y,
+
+         x0_b = from_b->x,
+         y0_b = from_b->y,
+         x1_b = to_b->x,
+         y1_b = to_b->y;
+         ;
+
+   if(x0_a == x1_a) {
+     if(x0_b == x1_b) {
+       if(x0_b == x0_a) {
+         return 1;
+       } else {
+         return 0;
+       }
+     }
+
+     double s = (x0_a - x0_b) / (x1_b - x0_b);
+     if(s < 0 || s > 1) return 0;
+
+     double y = y0_b + s * y1_b;
+     if(y >= y0_a && y <= y1_a) {
+       return 1;
+     } else {
+       return 0;
+     }
+   }
+   double r = y0_b * (x1_b - x0_b) + (y1_b - y0_b) * (x0_a - x0_b) - y0_a * (x1_b - x0_b);
+   r /= ((x1_b - x0_b) * (y1_a - y0_a) - (x1_a - x0_a) * (y1_b - y0_b));
+
+   if(r < 0 || r > 1) return 0;
+
+   if(x1_b == x0_b) {
+     double y = y0_a + r * (y1_a - y0_a);
+     double y_start = (y0_b > y1_b) ? y1_b : y0_b;
+     double y_end = (y0_b < y1_b) ? y1_b : y0_b;
+     if(y >= y_start && y <= y_end) {
+       return 1;
+     } else {
+       return 0;
+     }
+   }
+   double s =  ((x0_a - x0_b) + r * (x1_a - x0_a)) / (x1_b - x0_b);
+
+   if(s < 0 || s > 1) return 0;
+
+   return 1;
+}
+
 void polygon_destroy(PolygonalObstacle *po) {
   dlist_destroy(po->corners, NULL);
   free(po);
@@ -223,4 +280,69 @@ double polygon_map_covered(DList *polygons, double width, double height) {
   }
 
   return occupied / (width * height);
+}
+
+unsigned short polygon_overlapping(PolygonalObstacle *p, PolygonalObstacle *o) {
+
+  // Use ray casting. We need the bounding box of both polygons
+  // for this because we need to find a point that is definitely outside.
+  MapPoint *m; 
+  double p_x_min, p_y_min, o_x_min, o_y_min;
+  
+  m = darray_get(p->corners->data, 0);
+  p_x_min = m->x;
+  p_y_min = m->y;
+
+  m = darray_get(o->corners->data, 0);
+  o_x_min = m->x;
+  o_y_min = m->y;
+
+  for(size_t idx = 1; idx < p->corners->num_items; idx++) {
+    m = darray_get(p->corners->data, idx);
+    p_x_min = (m->x < p_x_min) ? m->x : p_x_min; 
+    p_y_min = (m->y < p_y_min) ? m->y : p_y_min; 
+  }
+
+  for(size_t idx = 1; idx < o->corners->num_items; idx++) {
+    m = darray_get(o->corners->data, idx);
+    o_x_min = (m->x < o_x_min) ? m->x : o_x_min; 
+    o_y_min = (m->y < o_y_min) ? m->y : o_y_min; 
+  }
+
+  // Now, for both polygons: choose a point outside the bounding box,
+  // cast a ray from it to each corner and count for each ray how
+  // often it intersects with an edge of the other polygon. If for one
+  // ray there is an odd number of intersections, than the target point
+  // is within the other polygon
+  
+  // Start with bounding box of P
+  MapPoint *from = malloc(sizeof(MapPoint)), *to;
+  from->x = o_x_min - 1.0, from->y = o_y_min - 1.0;
+
+  for(size_t idx = 0; idx < p->corners->num_items; idx++) {
+    to = darray_get(p->corners->data, idx);
+    size_t count = 0;
+    for(size_t jj = 0; jj < o->corners->num_items; jj++) {
+      MapPoint *edge_from = darray_get(o->corners->data, jj);
+      MapPoint *edge_to = darray_get(o->corners->data, (jj+1) % o->corners->num_items);
+      count += _lines_intersect(from, to, edge_from, edge_to);
+    }
+    if(count % 2 == 1) { return 1; }
+  }
+
+  // Now the other one
+  from->x = p_x_min - 1.0, from->y = p_y_min - 1.0;
+
+  for(size_t idx = 0; idx < o->corners->num_items; idx++) {
+    to = darray_get(o->corners->data, idx);
+    size_t count = 0;
+    for(size_t jj = 0; jj < p->corners->num_items; jj++) {
+      MapPoint *edge_from = darray_get(p->corners->data, jj);
+      MapPoint *edge_to = darray_get(p->corners->data, (jj+1) % p->corners->num_items);
+      count += _lines_intersect(from, to, edge_from, edge_to);
+    }
+    if(count % 2 == 1) { return 1; }
+  }
+
+  return 0;
 }

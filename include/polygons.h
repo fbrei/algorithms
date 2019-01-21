@@ -71,4 +71,17 @@ double polygon_area(PolygonalObstacle *p);
  */
 double polygon_map_covered(DList *polygons, double width, double height);
 
+/**
+ * \brief Checks if two polygons overlap (1 yes, 0 no)
+ *
+ * This is also 1 if one of the polygons lies completely inside the other one.
+ * 
+ * \param *p One of the polygons
+ * \param *o The other polygons
+ * \return 1 if p and o overlap, 0 otherwise
+ */
+unsigned short polygon_overlapping(PolygonalObstacle *p, PolygonalObstacle *o);
+
+unsigned short _lines_intersect(MapPoint *from_a, MapPoint *to_a, MapPoint *from_b, MapPoint *to_b);
+
 #endif /* end of include guard: POLYGONS_H_MQ7DFOAE */
