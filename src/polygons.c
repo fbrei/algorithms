@@ -344,5 +344,19 @@ unsigned short polygon_overlapping(PolygonalObstacle *p, PolygonalObstacle *o) {
     if(count % 2 == 1) { return 1; }
   }
 
+  // Now check if any two lines intersect (expensive, that's why we do it last)
+  
+  for(size_t ii = 0; ii < p->corners->num_items; ii++) {
+      MapPoint *from_p = darray_get(p->corners->data, ii);
+      MapPoint *to_p = darray_get(p->corners->data, (ii+1) % p->corners->num_items);
+
+      for(size_t jj = 0; jj < o->corners->num_items; jj++) {
+        MapPoint *from_o = darray_get(o->corners->data, jj);
+        MapPoint *to_o = darray_get(o->corners->data, (jj+1) % o->corners->num_items);
+
+        if(_lines_intersect(from_p, to_p, from_o, to_o)) return 1;
+      }
+  }
+
   return 0;
 }

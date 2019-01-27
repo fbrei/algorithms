@@ -16,6 +16,8 @@
 #define RUN_FULL 1
 #define RUN_DYNAMIC 1
 
+#define min(x,y) ((x) < (y)) ? (x) : (y)
+
 // =========================================================
 
 void print_graph_node(void* v) {
@@ -33,6 +35,21 @@ double euclid_distance(void *n1, void *n2) {
   double dy = m1->y - m2->y;
 
   return sqrt(dx*dx + dy*dy);
+}
+
+double path_length_vgraph(MapPoint *m) {
+
+
+  double total_length = 0.0;
+
+  while(m != NULL) {
+    if(m->shortest_ancestor != NULL) {
+      total_length += euclid_distance(m, m->shortest_ancestor);
+    }
+    m = m->shortest_ancestor;
+  }
+
+  return total_length;
 }
 
 unsigned long hash(void *n) {
@@ -108,20 +125,23 @@ void add_obstacles(DList *spheres, DList *polygons) {
 
 }
 
-void random_polygons(DList *polygons, const size_t N_POLYGONS) {
+void random_polygons(DList *polygons, const size_t N_POLYGONS, const double x_dim, const double y_threshold) {
 
   const size_t MIN_CORNERS = 4;
   const size_t MAX_CORNERS = 9;
 
-  const double WIDTH = 90;
-  const double MIN_COORD = -45;
+  const double WIDTH = 2 * x_dim;
+  const double MIN_COORD = -x_dim;
   const double SPREAD = 120 / N_POLYGONS;
 
   for(size_t ii = 0; ii < N_POLYGONS; ii++) {
     DList *base_points = dlist_init();
     MapPoint *m = malloc(sizeof(MapPoint));
     m->x = (((double) rand()) / RAND_MAX) * WIDTH + MIN_COORD;
-    m->y = (((double) rand()) / RAND_MAX) * WIDTH + MIN_COORD;
+
+    double dec = y_threshold / x_dim;
+    double y_dim = min(dec + y_threshold, -dec / y_threshold);
+    m->y = (((double) rand()) / RAND_MAX) * 2.0 * y_dim - y_dim + m->x;
     m->shortest_length = 9999999999.9l;
 
     dlist_push(base_points, m);
@@ -255,8 +275,6 @@ DList* merge_polygons(DList* polygons) {
 
     merged = 0;
 
-    fprintf(stderr, "%lu\n", new_polygons->num_items);
-
     for(size_t ii = 0; ii < new_polygons->num_items; ii++) {
       PolygonalObstacle *p = darray_get(new_polygons->data, ii);
       for(size_t jj = ii+1; jj < new_polygons->num_items; jj++) {
@@ -289,39 +307,6 @@ DList* merge_polygons(DList* polygons) {
 
       if(merged) break;
     }
-  /*   for(size_t ii = 0; ii < new_polygons->num_items; ii++) { */
-  /*     PolygonalObstacle *p = darray_get(new_polygons->data, ii); */
-  /*     for(size_t jj = 0; jj < p->corners->num_items; jj++) { */
-  /*       MapPoint *from = darray_get(p->corners->data,jj); */
-  /*       MapPoint *to = darray_get(p->corners->data,(jj+1) % p->corners->num_items); */
-  /*  */
-  /*       PolygonalObstacle *o = polygon_get_first_blocking(from,to,new_polygons,p); */
-  /*       if(o != NULL) { */
-  /*         DList *points = dlist_init(); */
-  /*         for(size_t kk = 0; kk < p->corners->num_items; kk++) { */
-  /*           dlist_push(points, darray_get(p->corners->data,kk)); */
-  /*         } */
-  /*         for(size_t kk = 0; kk < o->corners->num_items; kk++) { */
-  /*           dlist_push(points, darray_get(o->corners->data,kk)); */
-  /*         } */
-  /*  */
-  /*         PolygonalObstacle *tmp = convex_hull(points); */
-  /*         DList *new_new_polygons = dlist_init(); */
-  /*         dlist_push(new_new_polygons, tmp); */
-  /*  */
-  /*         for(size_t kk = 0; kk < new_polygons->num_items; kk++) { */
-  /*           PolygonalObstacle *l = darray_get(new_polygons->data, kk); */
-  /*           if(l != o && l != p) */
-  /*             dlist_push(new_new_polygons,l); */
-  /*         } */
-  /*         new_polygons = new_new_polygons; */
-  /*         merged = 1; */
-  /*  */
-  /*         break; */
-  /*       } */
-  /*     } */
-  /*     if(merged) break; */
-  /*   } */
   }
 
   for(size_t ii = 0; ii < new_polygons->num_items; ii++) {
@@ -348,14 +333,22 @@ void dump_polygons(DList *polygons) {
     printf("\n");
     printf("],\n");
   }
+}
 
+void save_polygons(DList *polygons, size_t seed) {
+
+  const size_t BUFFER_SIZE = 256;
+
+  char *fname = malloc(BUFFER_SIZE * sizeof(char));
+  snprintf(fname, BUFFER_SIZE, "%lu_%lu_%lu.bin", polygons->num_items, seed, (unsigned long) round(100.0 * polygon_map_covered(polygons, 100, 100)));
+  fprintf(stderr, "Saving as %s\n", fname);
 
 }
 
 // =========================================================
 
 void print_help() {
-  printf("Usage: bin/vgraph_total_test [-n number of obstacles] [-s seed] [-o outfile] [-v] [-h]\n");
+  printf("Usage: bin/vgraph_total_test [-n number of obstacles] [-s seed] [-o outfile] [-v] [-h] [-d]\n");
   printf("    -n : The number of obstacles that shall be randomly generated. \n");
   printf("         Note that the real number will be a bit lower due to merging\n");
   printf("         (defaults to 20).\n");
@@ -363,6 +356,30 @@ void print_help() {
   printf("    -o : File name that the graph should be written to.\n");
   printf("    -v : Display some more output for the dynamic method. Subject to change.\n");
   printf("    -h : Display this help.\n");
+  printf("    -d : Dump the polygons in a json like array (can be read by python for example).\n");
+}
+
+void _reset_point(MapPoint *m) {
+  m->is_in = 0;
+  dlist_destroy(m->origins, NULL);
+  m->obstacle = NULL;
+  dlist_destroy(m->visited_points, NULL);
+  m->shortest_length = 9999999999.9l;
+  m->shortest_ancestor = NULL;
+  dlist_destroy(m->reachable, NULL);
+}
+void reset_map_points(MapPoint *start, MapPoint *goal, DList *polygons) {
+
+  _reset_point(start);
+  _reset_point(goal);
+
+  for(size_t idx_p = 0; idx_p < polygons->num_items; idx_p++) {
+    PolygonalObstacle *p = darray_get(polygons->data,idx_p);
+    for(size_t idx_m = 0; idx_m < p->corners->num_items; idx_m++) {
+      MapPoint *m = darray_get(p->corners->data, idx_m);
+      _reset_point(m);
+    }
+  }
 }
 
 int main(int argc, char** argv) {
@@ -370,21 +387,26 @@ int main(int argc, char** argv) {
   size_t N_POLYGONS = 20;
   short VERBOSE = 0;
   clock_t seed = time(0);
+  srand(seed);
+  seed = rand();
 
   // Use getopt to parse the arguments from the command line
   extern char* optarg;
   extern int optind;
-  short n_set = 0, h_set = 0, o_set = 0;
+  short n_set = 0, h_set = 0, o_set = 0, d_set = 0;
   char* outfile_name = NULL;
   short rc = 0, err = 0;
 
-  while((rc = getopt(argc, argv, "vhn:s:o:")) != -1) {
+  while((rc = getopt(argc, argv, "dvhn:s:o:")) != -1) {
     switch(rc) {
       case 'v':
         VERBOSE++;
         break;
       case 'h':
         h_set = 1;
+        break;
+      case 'd':
+        d_set = 1;
         break;
       case 'n':
         n_set = 1;
@@ -439,14 +461,20 @@ int main(int argc, char** argv) {
   goal->obstacle = NULL;
   goal->shortest_length = 9999999999.9l;
 
-  random_polygons(polygons, N_POLYGONS);
+  clock_t t_aou6ff0n, t_khlrengx;
+  
+  t_aou6ff0n = clock();
+  random_polygons(polygons, N_POLYGONS, 45.0, 20);
   polygons = merge_polygons(polygons);
+  t_khlrengx = clock();
+  
+  clock_t map_time = t_khlrengx - t_aou6ff0n;
 
   /* evil_test_set(polygons); */
 
   clock_t t1_full, t2_full;
-  AStarPathNode *p_full;
-  Graph *g_full;
+  AStarPathNode *p_full = NULL;
+  Graph *g_full = NULL; 
 
   t1_full = clock();
   g_full = vgraph_polygonal_obstacles(start,goal,polygons,euclid_distance,0);
@@ -476,23 +504,38 @@ int main(int argc, char** argv) {
   /* dlist_destroy(polygons,NULL); */
   /* polygons = dlist_init(); */
 
-  /* dump_polygons(polygons); */
+  if(d_set) dump_polygons(polygons);
 
   // The above method may fail. Now let's try the improved method
   clock_t t1_dyn, t2_dyn;
-  AStarPathNode *p_dyn;
-  Graph *g_dyn;
+  AStarPathNode *p_dyn = NULL;
+  Graph *g_dyn = NULL; 
 
   t1_dyn = clock();
-  g_dyn = vgraph(start,goal,polygons,spheres,euclid_distance,2, VERBOSE);
+  g_dyn = vgraph(start,goal,polygons,spheres,euclid_distance,VGRAPH_DYNAMIC, VERBOSE);
   p_dyn = astar(g_dyn, start, goal, euclid_distance, hash);
   t2_dyn = clock();
 
+  clock_t t1_vstar, t2_vstar;
+  t1_vstar = clock();
+  /* vstar(start, goal, polygons, spheres, euclid_distance, VERBOSE); */
+  t2_vstar = clock();
+
+  clock_t t1_dyn_pr, t2_dyn_pr;
+  AStarPathNode *p_dyn_pr = NULL;
+  Graph *g_dyn_pr = NULL; 
+
+  t1_dyn_pr = clock();
+  g_dyn_pr = vgraph(start,goal,polygons,spheres,euclid_distance,VGRAPH_DYNAMIC_LOCAL_PRUNING, VERBOSE);
+  p_dyn_pr = astar(g_dyn_pr, start, goal, euclid_distance, hash);
+  t2_dyn_pr = clock();
+  
   if(VERBOSE) {
     printf("====================================\n");
     printf("Meta information:\n");
     printf("----------------------\n");
     printf("   Seed: %lu\n", seed);
+    printf("   Time to generate map: %luus\n", map_time);
     printf("   Number of obstacles: %lu\n", polygons->num_items);
     printf("   Percentage of map covered: %g\n", polygon_map_covered(polygons, 100, 100));
     printf("====================================\n");
@@ -511,23 +554,42 @@ int main(int argc, char** argv) {
 
     printf("Path length: %g\n", p_dyn->total_dist);
     printf("Time; %luus\n", t2_dyn-t1_dyn);
+
+    printf("\n");
+
+    printf("Dynamic with pruning\n");
+    printf("====================================\n");
+
+    printf("Path length: %g\n", p_dyn_pr->total_dist);
+    printf("Time; %luus\n", t2_dyn_pr-t1_dyn_pr);
+
+    printf("\n");
+
+    printf("VStar\n");
+    printf("====================================\n");
+
+    printf("Path length: %g\n", 0.0);
+    printf("Time; %luus\n", t2_vstar - t1_vstar);
   } else {
-    printf("%lu %lu %lu\n", polygons->num_items, t2_dyn - t1_dyn, t2_full - t1_full);
+    printf("%lu %lu %lu %lu %lu\n", polygons->num_items, seed, t2_full - t1_full, t2_dyn - t1_dyn, t2_dyn_pr - t1_dyn_pr);
   }
 
+#define PRINTED_GRAPH g_dyn
+#define PRINTED_PATH p_dyn
   if(o_set) {
     freopen(outfile_name, "w", stdout);
     printf("Full path:\n");
-    while(p_dyn) {
-      print_graph_node(p_dyn->data);
+    while(PRINTED_PATH) {
+      print_graph_node(PRINTED_PATH->data);
       printf("\n");
-      p_dyn = p_dyn->parent;
+      PRINTED_PATH = PRINTED_PATH->parent;
     }
     printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
-    graph_print(g_dyn, print_graph_node);
+    graph_print(PRINTED_GRAPH, print_graph_node);
     printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
   }
 
+  /* save_polygons(polygons, seed); */
   UNUSED(p_dyn);
   UNUSED(p_full);
 

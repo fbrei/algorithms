@@ -20,6 +20,8 @@ typedef struct _MapPoint {
   void *obstacle; /**< The obstacle that this point is sitting on (if any). Should be set to NULL otherwise. */
   DList *visited_points; /**< List of points that this map point has tried to reach so far. */
   double shortest_length; /**< The shortest path length to this point so far */
+  struct _MapPoint *shortest_ancestor; /**< The shortest ancestor */
+  DList *reachable; /**< List of reachable locations, */
 } MapPoint;
 
 

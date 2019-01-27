@@ -20,6 +20,17 @@
 #include "include/tangents.h"
 #include "include/polygons.h"
 
+/*! \enum VGRAPH_MODES
+ *
+ *  Different dynamic or full modes of vgraph algo
+ */
+enum VGRAPH_MODES { 
+  VGRAPH_FULL,
+  VGRAPH_DYNAMIC,
+  VGRAPH_DYNAMIC_SINGLE_ORIGIN,
+  VGRAPH_DYNAMIC_LOCAL_PRUNING
+};
+
 /**
  * \brief Brief description
  *
@@ -51,4 +62,10 @@ Graph* vgraph(MapPoint *start,
     const int dynamic,
     short verbose);
 
+MapPoint *vstar(MapPoint *start,
+    MapPoint *goal, 
+    DList *polygons,
+    DList *spheres,
+    double (*distance_metric)(void*, void*),
+    short verbose);
 #endif /* end of include guard: VGRAPH_H_AWDEVYPA */

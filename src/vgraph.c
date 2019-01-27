@@ -13,6 +13,14 @@ int compare_to(void* a,void* b) {
   return 1;
 }
 
+int compare_to_2(void *a, void *b) {
+
+  MapPoint *m = (MapPoint*) a;
+  MapPoint *n = (MapPoint*) b;
+
+  return (m->shortest_length < n->shortest_length) ? 0  : 1;
+}
+
 unsigned int equals(void *a, void *b) {
   return (a == b) ? 1 : 0;
 }
@@ -49,6 +57,40 @@ void add_all_corners(Graph *g, DList *polygons) {
       graph_add(g, m);
     }
   }
+}
+
+void _print_status_map(MapPoint *start, MapPoint *goal, DList *polygons) {
+
+  fprintf(stderr, "(%+05g,%+05g)          ", start->x, start->y);
+  for(size_t ii = 0; ii < polygons->num_items; ii++) {
+    PolygonalObstacle *p = darray_get(polygons->data,ii);
+    for(size_t jj = 0; jj < p->corners->num_items; jj++) {
+      MapPoint *m = darray_get(p->corners->data, jj);
+      fprintf(stderr, "(%+05g,%+05g)          ", m->x, m->y);
+    }
+  }
+  fprintf(stderr, "(%+05g,%+05g)          ", goal->x, goal->y);
+  fprintf(stderr, "\n");
+
+  fprintf(stderr, "%g     (-)             ", start->shortest_length);
+  for(size_t ii = 0; ii < polygons->num_items; ii++) {
+    PolygonalObstacle *p = darray_get(polygons->data,ii);
+    for(size_t jj = 0; jj < p->corners->num_items; jj++) {
+      MapPoint *m = darray_get(p->corners->data, jj);
+      if(m->shortest_ancestor) {
+        fprintf(stderr, "%g     (%05g,%05g)               ", m->shortest_length, m->shortest_ancestor->x, m->shortest_ancestor->y);
+      } else {
+        fprintf(stderr, "%g     %p            ", m->shortest_length, (void*) m->shortest_ancestor);
+      }
+    }
+  }
+  if(goal->shortest_ancestor) {
+    fprintf(stderr, "%g     (%05g,%05g)       ", goal->shortest_length, goal->shortest_ancestor->x, goal->shortest_ancestor->y);
+  } else {
+    
+  }
+  fprintf(stderr, "\n\n");
+
 }
 
 Graph* vgraph_circular_obstacles(MapPoint *start, MapPoint *goal, DList *obstacles, double (*distance_metric)(void*, void*), const int DYNAMIC) {
@@ -670,13 +712,46 @@ void update_queues(MapPoint *current, MapPoint *target, PrQueue *global) {
 void add_source_point(MapPoint *current, MapPoint *new_origin, PrQueue *global) {
 
   if(darray_find(current->origins->data, new_origin) == -1) {
+
+    /* fprintf(stderr, "       Adding "); */
+    /* print_map_point(stderr, new_origin); */
+    /* fprintf(stderr, " as new origin to "); */
+    /* print_map_point(stderr, current); */
+    /* fprintf(stderr, " | %lu items added to new origin's inspection list:\n", current->visited_points->num_items); */
+
     dlist_push(current->origins, new_origin);
     for(size_t ii = 0; ii < current->visited_points->num_items; ii++) {
       MapPoint *next = darray_get(current->visited_points->data, ii);
+      /* fprintf(stderr, "                  "); */
+      /* print_map_point(stderr, next); */
+      /* fprintf(stderr, "\n"); */
       update_queues(new_origin, next, global);
     }
   }
 
+}
+
+
+void update_path_lengths(MapPoint *current, double new_length, double (*distance_metric) (void*,void*)) {
+
+  current->shortest_length = new_length;
+
+  DList *updated = dlist_init();
+
+  for(size_t idx = 0; idx < current->reachable->num_items; idx++) {
+    MapPoint *next = darray_get(current->reachable->data, idx);
+    if(next->shortest_length < new_length + distance_metric(current,next)) {
+      next->shortest_length = new_length + distance_metric(current,next);
+      dlist_push(updated, next);
+    }
+  }
+
+  for(size_t idx = 0; idx < updated->num_items; idx++) {
+    MapPoint *next = darray_get(current->reachable->data, idx);
+    update_path_lengths(next, new_length + distance_metric(current,next), distance_metric);
+  }
+
+  dlist_destroy(updated, NULL);
 }
 
 Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, double (*distance_metric)(void*, void*), const int dynamic, short VERBOSE) {
@@ -689,7 +764,7 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
   // be incorporated later
   UNUSED(spheres);
 
-  if(dynamic == 2) {
+  if(dynamic == VGRAPH_DYNAMIC_LOCAL_PRUNING) {
 
     add_all_corners(g, polygons);
 
@@ -697,10 +772,13 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
       MapPoint *m = darray_get(g->node_list, ii);
       m->origins = dlist_init();
       m->local_queue = prqueue_init(compare_to);
+      m->local_queue->equals = equals;
+      m->reachable = dlist_init();
       m->visited_points = dlist_init();
       if(m != goal) {
         prqueue_add(m->local_queue, goal);
       }
+      m->shortest_length = 9999999999.9l;
     }
 
     // =========================================================
@@ -710,7 +788,6 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
     prqueue_add(global,start);
 
     double shortest_to_goal = 9999999999.9l;
-    UNUSED(shortest_to_goal);
 
     MapPoint *from, *to;
     start->shortest_length = 0.0l;
@@ -718,32 +795,66 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
     // Get the next item on the todo list
     while((from = prqueue_pop(global)) != NULL) {
 
+      /* _print_status_map(start, goal, polygons); */
+
       if(VERBOSE >= 2) {
-        fprintf(stderr, "Checking (%g,%g) -> %lu nodes to inspect\n", from->x, from->y, from->local_queue->num_items);
+        fprintf(stderr, "Checking (%g,%g) -> %lu nodes to inspect | Obstacle %p | Shortest length: %g\n", from->x, from->y, from->local_queue->num_items, from->obstacle, from->shortest_length);
       }
 
       if(from == goal || from->local_queue->num_items == 0) continue;
 
       if(from->obstacle != NULL && from->local_queue->num_items  > 0) {
         PolygonalObstacle *p = from->obstacle;
-        long idx = darray_find(p->corners->data, from);
+        long tmp_idx = darray_find(p->corners->data, from);
+        size_t idx = (tmp_idx > 0) ? tmp_idx : 0;
         MapPoint *n;
+        double d;
 
         n = darray_get(p->corners->data, (idx+1) % p->corners->num_items);
-        double d;
         d = distance_metric(from,n);
-        if(from->shortest_length + d < n->shortest_length && from->shortest_length + d < shortest_to_goal && graph_get_edge_weight(g, from, n) == NULL) {
+        if(darray_find(from->reachable->data, n) == -1) {
+          dlist_push(from->reachable, n);
+        } 
+        if(VERBOSE == 2) {
+          fprintf(stderr,"        Connecting edges (%g,%g) -> (%g,%g)\n", from->x, from->y, n->x, n->y);
+          fprintf(stderr, "             Shortest so far: %g\n", n->shortest_length);
+          fprintf(stderr, "             Candidate: %g\n", from->shortest_length + d);
+        }
+        if(from->shortest_length + d < n->shortest_length && from->shortest_length + d < shortest_to_goal) {
           graph_connect(g, from, n, distance_metric(from,n));
           add_source_point(n, from, global);
-          if(n->local_queue->num_items > 0) prqueue_add(global, n);
+          n->shortest_length = from->shortest_length + d;
+          prqueue_add(global, n);
+          for(size_t idx = 0; idx < n->reachable->num_items; idx++) {
+            MapPoint *m = darray_get(n->reachable->data, idx);
+            if(!prqueue_contains(n->local_queue, m)) {
+              prqueue_add(n->local_queue, m);
+            }
+          }
         }
 
         n = darray_get(p->corners->data, (idx >0) ? idx - 1 : p->corners->num_items - 1);
         d = distance_metric(from,n);
-        if(from->shortest_length + d < n->shortest_length && from->shortest_length + d < shortest_to_goal && graph_get_edge_weight(g, from, n) == NULL) {
+
+        if(darray_find(from->reachable->data, n) == -1) {
+          dlist_push(from->reachable, n);
+        } 
+        if(VERBOSE == 2) {
+          fprintf(stderr,"        Connecting edges (%g,%g) -> (%g,%g)\n", from->x, from->y, n->x, n->y);
+          fprintf(stderr, "             Shortest so far: %g\n", n->shortest_length);
+          fprintf(stderr, "             Candidate: %g\n", from->shortest_length + d);
+        }
+        if(from->shortest_length + d < n->shortest_length && from->shortest_length + d < shortest_to_goal) {
           graph_connect(g, from, n, distance_metric(from,n));
           add_source_point(n, from, global);
-          if(n->local_queue->num_items > 0) prqueue_add(global, n);
+          n->shortest_length = from->shortest_length + d;
+          prqueue_add(global, n);
+          for(size_t idx = 0; idx < n->reachable->num_items; idx++) {
+            MapPoint *m = darray_get(n->reachable->data, idx);
+            if(!prqueue_contains(n->local_queue, m)) {
+              prqueue_add(n->local_queue, m);
+            }
+          }
         }
       }
 
@@ -756,25 +867,37 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
           fprintf(stderr, "    Trying to reach (%g,%g)\n", to->x, to->y);
         }
 
-        if(darray_find(from->visited_points->data, to) > -1) {
-          continue;
-        }
-        dlist_push(from->visited_points, to);
-
         // As always, try to make a direct connection first
 
         if(!polygon_is_blocked(from, to, polygons)) {
+          double d = distance_metric(from,to);
           if(VERBOSE >= 2) {
             fprintf(stderr, "        Connection is possible!\n");
+            fprintf(stderr, "           So far: %g\n", to->shortest_length);
+            fprintf(stderr, "           Candidate: %g\n", from->shortest_length + d);
           }
           // Update forward
-          if(graph_get_edge_weight(g, from, to)) continue;
+          if(!graph_get_edge_weight(g, from, to))  dlist_push(from->reachable, to);
 
-          double d = distance_metric(from,to);
           if(from->shortest_length + d < to->shortest_length && from->shortest_length + d < shortest_to_goal) {
             to->shortest_length = from->shortest_length + d;
-            if(to == goal) shortest_to_goal = from->shortest_length + d;
-            graph_connect(g, from, to, d);
+            if(!prqueue_contains(global, to)) prqueue_add(global, to);
+            if(to == goal) {
+              shortest_to_goal = from->shortest_length + d;
+              if(VERBOSE == 2) {
+                fprintf(stderr, "               Found a way to the goal [%g | %g]\n", from->shortest_length + d, to->shortest_length);
+              }
+            }
+
+            for(size_t idx = 0; idx < to->reachable->num_items; idx++) {
+              MapPoint *m = darray_get(to->reachable->data, idx);
+              if(!prqueue_contains(to->local_queue, m)) {
+                prqueue_add(to->local_queue, m);
+              }
+            }
+
+
+            if(!graph_get_edge_weight(g, from, to))  graph_connect(g, from, to, d);
 
             add_source_point(to, from, global);
 
@@ -840,19 +963,32 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
 
                 // Update forward
                 if(graph_get_edge_weight(g, from, corner)) continue;
+                if(darray_find(from->reachable->data, corner) == -1) {
+                  dlist_push(from->reachable, corner);
+                } 
 
                 if(VERBOSE >= 2) {
                   fprintf(stderr, "        Connecting to (%g,%g)!\n", corner->x, corner->y);
                 }
       
                 double d = distance_metric(from,corner);
+                if(VERBOSE == 2) {
+                  fprintf(stderr, "             Shortest so far: %g | Candidate: %g\n", corner->shortest_length, from->shortest_length + d);
+                }
                 if(from->shortest_length + d < corner->shortest_length && from->shortest_length + d < shortest_to_goal) {
+                  /* update_path_lengths(corner, from->shortest_length + d, distance_metric); */
                   corner->shortest_length = from->shortest_length + d;
+                  for(size_t idx = 0; idx < corner->reachable->num_items; idx++) {
+                    MapPoint *m = darray_get(corner->reachable->data, idx);
+                    if(!prqueue_contains(corner->local_queue, m)) {
+                      prqueue_add(corner->local_queue, m);
+                    }
+                  }
                   graph_connect(g, from, corner, distance_metric(from,corner));
 
                   prqueue_add(global, corner);
-                  dlist_push(corner->origins, from);
                   add_source_point(corner, from, global);
+                  dlist_push(corner->origins, from);
 
                   // Update backward
                   for(size_t jj = 0; jj < from->origins->num_items; jj++) {
@@ -878,6 +1014,189 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
 
     return g;
     
+  } else if(dynamic == VGRAPH_DYNAMIC) {
+
+    add_all_corners(g, polygons);
+
+    for(size_t ii = 0; ii < g->node_list->num_items; ii++) {
+      MapPoint *m = darray_get(g->node_list, ii);
+      m->origins = dlist_init();
+      m->local_queue = prqueue_init(compare_to);
+      m->local_queue->equals = equals;
+      m->visited_points = dlist_init();
+      if(m != goal) {
+        prqueue_add(m->local_queue, goal);
+      }
+    }
+
+    // =========================================================
+
+    PrQueue *global = prqueue_init(compare_to);
+    global->equals = equals;
+    prqueue_add(global,start);
+
+    MapPoint *from, *to;
+    start->shortest_length = 0.0l;
+
+    // Get the next item on the todo list
+    while((from = prqueue_pop(global)) != NULL) {
+
+      /* _print_status_map(start, goal, polygons); */
+
+      if(VERBOSE >= 2) {
+        fprintf(stderr, "Checking (%g,%g) -> %lu nodes to inspect | Obstacle %p | Shortest length: %g\n", from->x, from->y, from->local_queue->num_items, from->obstacle, from->shortest_length);
+      }
+
+      if(from == goal || from->local_queue->num_items == 0) continue;
+
+      if(from->obstacle != NULL && from->local_queue->num_items  > 0) {
+        PolygonalObstacle *p = from->obstacle;
+        long tmp_idx = darray_find(p->corners->data, from);
+        size_t idx = (tmp_idx > 0) ? tmp_idx : 0;
+        MapPoint *n;
+
+        n = darray_get(p->corners->data, (idx+1) % p->corners->num_items);
+        if(VERBOSE == 2) {
+          fprintf(stderr,"        Connecting edges (%g,%g) -> (%g,%g)\n", from->x, from->y, n->x, n->y);
+        }
+        if(graph_get_edge_weight(g, from, n) == NULL) {
+          graph_connect(g, from, n, distance_metric(from,n));
+          add_source_point(n, from, global);
+          prqueue_add(global, n);
+        }
+
+        n = darray_get(p->corners->data, (idx >0) ? idx - 1 : p->corners->num_items - 1);
+
+        if(VERBOSE == 2) {
+          fprintf(stderr,"        Connecting edges (%g,%g) -> (%g,%g)\n", from->x, from->y, n->x, n->y);
+        }
+        if(graph_get_edge_weight(g, from, n) == NULL) {
+          graph_connect(g, from, n, distance_metric(from,n));
+          add_source_point(n, from, global);
+          prqueue_add(global, n);
+        }
+      }
+
+      // The point may have some points listed that it should try to reach.
+      while((to = prqueue_pop(from->local_queue)) != NULL) {
+
+        if(from->obstacle && from->obstacle == to->obstacle) continue;
+        
+        if(darray_find(from->visited_points->data, to) > -1) continue;
+        dlist_push(from->visited_points, to);
+
+        if(VERBOSE >= 2) {
+          fprintf(stderr, "    Trying to reach (%g,%g)\n", to->x, to->y);
+        }
+
+        // As always, try to make a direct connection first
+
+        if(!polygon_is_blocked(from, to, polygons)) {
+          double d = distance_metric(from,to);
+          if(VERBOSE >= 2) {
+            fprintf(stderr, "        Connection is possible!\n");
+          }
+          // Update forward
+          if(!prqueue_contains(global, to)) prqueue_add(global, to);
+          if(!graph_get_edge_weight(g, from, to))  graph_connect(g, from, to, d);
+
+          add_source_point(to, from, global);
+
+          // Update backward
+          if(VERBOSE >= 2) {
+            fprintf(stderr, "      Need to update %lu origins ...\n", from->origins->num_items);
+          }
+          for(size_t ii = 0; ii < from->origins->num_items; ii++) {
+            MapPoint *origin = darray_get(from->origins->data, ii);
+            if(VERBOSE >= 2) {
+              fprintf(stderr, "        Updating origin point: (%g,%g)\n", origin->x, origin->y);
+            }
+            update_queues(origin, to, global);
+          }
+          
+
+        } else {
+
+          PolygonalObstacle *p = polygon_get_first_blocking(from, to, polygons, from->obstacle);
+
+          if(VERBOSE >= 2) {
+            if(p) {
+              fprintf(stderr, "        Blocked by %p \n", (void*) p);
+              double p_x = ((MapPoint*) darray_get(p->corners->data, 0))->x;
+              double p_y = ((MapPoint*) darray_get(p->corners->data, 0))->y;
+              fprintf(stderr, "              (%g,%g)\n", p_x, p_y);
+            }
+          }
+
+          // Do the whole expansion process as above in the other method, starting from the
+          // current point
+          PrQueue *local = prqueue_init(compare_to);
+          HSet *local_explored = hset_init(obstacle_hash, equals);
+          local->equals = equals;
+          prqueue_add(local, p);
+          while((p = prqueue_pop(local)) != NULL) {
+
+            if(hset_contains(local_explored, p) != -1) {
+              continue;
+            } else {
+              hset_add(local_explored, p);
+            }
+
+            if(VERBOSE >= 2) {
+              double p_x = ((MapPoint*) darray_get(p->corners->data, 0))->x;
+              double p_y = ((MapPoint*) darray_get(p->corners->data, 0))->y;
+              fprintf(stderr, "       Current obstacle: (%g,%g)\n", p_x, p_y);
+            }
+
+      
+            if(p == from->obstacle) continue;
+
+            for(size_t ii = 0; ii < p->corners->num_items; ii++) {
+
+              MapPoint *corner = darray_get(p->corners->data, ii);
+
+              if(VERBOSE >= 2) {
+                fprintf(stderr, "      Trying to reach (%g,%g)\n", corner->x, corner->y);
+              }
+
+              if(!polygon_is_blocked(from, corner, polygons)) {
+
+                // Update forward
+                if(graph_get_edge_weight(g, from, corner)) continue;
+
+                if(VERBOSE >= 2) {
+                  fprintf(stderr, "        Connecting to (%g,%g)!\n", corner->x, corner->y);
+                }
+      
+                graph_connect(g, from, corner, distance_metric(from,corner));
+
+                prqueue_add(global, corner);
+                add_source_point(corner, from, global);
+                dlist_push(corner->origins, from);
+
+                // Update backward
+                for(size_t jj = 0; jj < from->origins->num_items; jj++) {
+                  MapPoint *origin = darray_get(from->origins->data, jj);
+                  if(VERBOSE >= 2) {
+                    fprintf(stderr, "        Updating origin point: (%g,%g)\n", origin->x, origin->y);
+                  }
+                  update_queues(origin, corner, global);
+                  prqueue_add(global, origin);
+                }
+              } else {
+                PolygonalObstacle *block = polygon_get_first_blocking(from, corner, polygons, from->obstacle);
+                if(block != p && block != from->obstacle && !prqueue_contains(local, block)) {
+                  prqueue_add(local, block);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return g;
+    
   } else {
 
     // This was done by me at work, I forgot to push to the repo ...
@@ -886,4 +1205,206 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
 
   return g;
 
+}
+
+
+MapPoint *vstar(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, double (*distance_metric)(void*, void*), short VERBOSE) {
+
+  UNUSED(spheres);
+  UNUSED(VERBOSE);
+
+  HSet *initialized = hset_init(obstacle_hash, equals);
+
+  // =========================================================
+
+  PrQueue *global = prqueue_init(compare_to);
+  global->equals = equals;
+  prqueue_add(global,start);
+
+  double shortest_to_goal = 9999999999.9l;
+
+  goal->shortest_ancestor = NULL;
+
+  MapPoint *from, *to;
+  start->shortest_length = 0.0l;
+  start->shortest_ancestor = NULL;
+  start->local_queue = prqueue_init(compare_to);
+  start->visited_points = dlist_init();
+
+  for(size_t ii = 0; ii < polygons->num_items; ii++) {
+    PolygonalObstacle *p = darray_get(polygons->data,ii);
+    for(size_t jj = 0; jj < p->corners->num_items; jj++) {
+      MapPoint *m = darray_get(p->corners->data, jj);
+      m->local_queue = prqueue_init(compare_to);
+      m->visited_points = dlist_init();
+      m->shortest_length = 9999999999.9l;
+      m->shortest_ancestor = NULL;
+    }
+  }
+
+  // Get the next item on the todo list
+  while((from = prqueue_pop(global)) != NULL) {
+
+    if(VERBOSE == 2) {
+      fprintf(stderr, "%lu\n", global->num_items);
+    }
+
+    if(hset_contains(initialized, from) == -1) {
+
+      // Initialize the relevant parts of the MapPoint struct
+      if(from != goal) {
+        prqueue_add(from->local_queue, goal);
+      }
+
+      // If the point is the corner of a polygon (very likely),
+      // add its neighbors right away
+      PolygonalObstacle *p = from->obstacle;
+
+      if(p != NULL) {
+        long tmp_idx = darray_find(p->corners->data, from);
+        size_t idx = (tmp_idx > 0) ? tmp_idx : 0;
+        MapPoint *n;
+
+        double d;
+
+        n = darray_get(p->corners->data, (idx+1) % p->corners->num_items);
+        d = distance_metric(from,n);
+        if(from->shortest_length + d < n->shortest_length && from->shortest_length + d < shortest_to_goal) {
+          n->shortest_ancestor = from;
+          n->shortest_length = d;
+          prqueue_add(n->local_queue, from->shortest_ancestor);
+          prqueue_add(global, n);
+        }
+
+        n = darray_get(p->corners->data, (idx > 0) ? idx - 1 : p->corners->num_items-1);
+        d = distance_metric(from,n);
+        if(from->shortest_length + d < n->shortest_length && from->shortest_length + d < shortest_to_goal) {
+          n->shortest_ancestor = from;
+          n->shortest_length = d;
+          prqueue_add(n->local_queue, from->shortest_ancestor);
+          prqueue_add(global, n);
+        }
+      }
+
+      // Done ;)
+      hset_add(initialized, from);
+    }
+
+    if(VERBOSE >= 2) {
+      fprintf(stderr, "Checking (%g,%g) -> %lu nodes to inspect\n", from->x, from->y, from->local_queue->num_items);
+    }
+
+    if(from == goal || from->local_queue->num_items == 0) continue;
+
+    // The point may have some points listed that it should try to reach.
+    while((to = prqueue_pop(from->local_queue)) != NULL) {
+
+      if(from->obstacle && from->obstacle == to->obstacle) continue;
+
+      if(VERBOSE >= 2) {
+        fprintf(stderr, "    Trying to reach (%g,%g)\n", to->x, to->y);
+      }
+
+      if(darray_find(from->visited_points->data, to) > -1) {
+        continue;
+      }
+      dlist_push(from->visited_points, to);
+
+      // As always, try to make a direct connection first
+
+      if(!polygon_is_blocked(from, to, polygons)) {
+        if(VERBOSE >= 2) {
+          fprintf(stderr, "        Connection is possible!\n");
+        }
+
+        double d = distance_metric(from,to);
+        if(from->shortest_length + d < to->shortest_length && from->shortest_length + d < shortest_to_goal) {
+          // Update forward
+          to->shortest_length = from->shortest_length + d;
+          to->shortest_ancestor = from;
+          if(to == goal) shortest_to_goal = from->shortest_length + d;
+
+          // Update backward
+          if(from->shortest_ancestor) {
+            prqueue_add(from->shortest_ancestor->local_queue, to);
+            prqueue_add(global, from->shortest_ancestor);
+          }
+
+          prqueue_add(global, to);
+         }
+
+      } else {
+
+        PolygonalObstacle *p = polygon_get_first_blocking(from, to, polygons, from->obstacle);
+
+        if(VERBOSE >= 2) {
+          if(p) {
+            fprintf(stderr, "        Blocked by %p \n", (void*) p);
+            double p_x = ((MapPoint*) darray_get(p->corners->data, 0))->x;
+            double p_y = ((MapPoint*) darray_get(p->corners->data, 0))->y;
+            fprintf(stderr, "              (%g,%g)\n", p_x, p_y);
+          }
+        }
+
+        // Do the whole expansion process as above in the other method, starting from the
+        // current point
+        PrQueue *local = prqueue_init(compare_to);
+        HSet *local_explored = hset_init(obstacle_hash, equals);
+        local->equals = equals;
+        prqueue_add(local, p);
+        while((p = prqueue_pop(local)) != NULL) {
+
+          if(hset_contains(local_explored, p) != -1) {
+            continue;
+          } else {
+            hset_add(local_explored, p);
+          }
+
+          if(VERBOSE >= 2) {
+            double p_x = ((MapPoint*) darray_get(p->corners->data, 0))->x;
+            double p_y = ((MapPoint*) darray_get(p->corners->data, 0))->y;
+            fprintf(stderr, "       Current obstacle: (%g,%g)\n", p_x, p_y);
+          }
+
+    
+          if(p == from->obstacle) continue;
+
+          for(size_t ii = 0; ii < p->corners->num_items; ii++) {
+
+            MapPoint *corner = darray_get(p->corners->data, ii);
+
+            if(VERBOSE >= 2) {
+              fprintf(stderr, "      Trying to reach (%g,%g)\n", corner->x, corner->y);
+            }
+
+            if(!polygon_is_blocked(from, corner, polygons)) {
+              double d = distance_metric(from,corner);
+              if(from->shortest_length + d < corner->shortest_length && from->shortest_length + d < shortest_to_goal) {
+                // Update forward
+                corner->shortest_length = from->shortest_length + d;
+                corner->shortest_ancestor = from;
+                if(corner == goal) shortest_to_goal = from->shortest_length + d;
+
+                // Update backward
+                if(from->shortest_ancestor) {
+                  prqueue_add(from->shortest_ancestor->local_queue, corner);
+                  prqueue_add(global, from->shortest_ancestor);
+                }
+
+                prqueue_add(global, corner);
+
+              }
+            } else {
+              PolygonalObstacle *block = polygon_get_first_blocking(from, corner, polygons, from->obstacle);
+              if(block != p && block != from->obstacle && !prqueue_contains(local, block)) {
+                prqueue_add(local, block);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return NULL;
 }
