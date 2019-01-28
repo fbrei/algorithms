@@ -79,6 +79,6 @@ measurement:
 	$(CC) -c $(PERFFLAGS) src/tangents.c -o obj/tangents.o $(CFLAGS)
 	$(CC) -c $(PERFFLAGS) src/vgraph.c -o obj/vgraph.o $(CFLAGS)
 	$(CC) -c $(PERFFLAGS) src/polygons.c -o obj/polygons.o $(CFLAGS)
-	$(CC) -c $(PERFFLAGS) src/test/vgraph_total_test.c -o obj/vgraph_total_test.o $(CFLAGS)
-	$(LD) obj/*.o -o bin/vgraph_total_test -lm
+	$(CC) -c $(PERFFLAGS) src/test/vgraph_measurement.c -o obj/vgraph_measurement.o $(CFLAGS)
+	$(LD) obj/*.o -o bin/vgraph_measurement -lm
 	rm -rf obj

@@ -4,7 +4,7 @@
 #include <math.h>
 #define M_PI 3.1415926535897932
 
-unsigned short _lines_intersect(MapPoint *from_a, MapPoint *to_a, MapPoint *from_b, MapPoint *to_b) {
+unsigned short _lines_intersect(MapPoint *from_a, MapPoint *to_a, MapPoint *from_b, MapPoint *to_b, double *_r, double *_s) {
 
   // First line: A. First coordinates (x0,y0), go (x1,y1)
   // lines parametric: (x0,y0) + r*(dx,dy), where r is in [0,1]
@@ -58,6 +58,8 @@ unsigned short _lines_intersect(MapPoint *from_a, MapPoint *to_a, MapPoint *from
 
    if(s < 0 || s > 1) return 0;
 
+   if(_r) *_r = r;
+   if(_s) *_s = s;
    return 1;
 }
 
@@ -325,7 +327,7 @@ unsigned short polygon_overlapping(PolygonalObstacle *p, PolygonalObstacle *o) {
     for(size_t jj = 0; jj < o->corners->num_items; jj++) {
       MapPoint *edge_from = darray_get(o->corners->data, jj);
       MapPoint *edge_to = darray_get(o->corners->data, (jj+1) % o->corners->num_items);
-      count += _lines_intersect(from, to, edge_from, edge_to);
+      count += _lines_intersect(from, to, edge_from, edge_to, NULL, NULL);
     }
     if(count % 2 == 1) { return 1; }
   }
@@ -339,7 +341,7 @@ unsigned short polygon_overlapping(PolygonalObstacle *p, PolygonalObstacle *o) {
     for(size_t jj = 0; jj < p->corners->num_items; jj++) {
       MapPoint *edge_from = darray_get(p->corners->data, jj);
       MapPoint *edge_to = darray_get(p->corners->data, (jj+1) % p->corners->num_items);
-      count += _lines_intersect(from, to, edge_from, edge_to);
+      count += _lines_intersect(from, to, edge_from, edge_to, NULL,NULL);
     }
     if(count % 2 == 1) { return 1; }
   }
@@ -354,7 +356,7 @@ unsigned short polygon_overlapping(PolygonalObstacle *p, PolygonalObstacle *o) {
         MapPoint *from_o = darray_get(o->corners->data, jj);
         MapPoint *to_o = darray_get(o->corners->data, (jj+1) % o->corners->num_items);
 
-        if(_lines_intersect(from_p, to_p, from_o, to_o)) return 1;
+        if(_lines_intersect(from_p, to_p, from_o, to_o,NULL,NULL)) return 1;
       }
   }
 

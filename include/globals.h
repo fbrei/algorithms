@@ -24,6 +24,6 @@ typedef struct _MapPoint {
   DList *reachable; /**< List of reachable locations, */
 } MapPoint;
 
-
+inline double sq(double x) { return x * x; }
 
 #endif /* end of include guard: GLOBALS_H_WZOSBK84 */

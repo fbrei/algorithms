@@ -1408,3 +1408,53 @@ MapPoint *vstar(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres
 
   return NULL;
 }
+
+void* get_first_blocking(MapPoint *from, MapPoint *to, DList *spheres, DList *polygons, void *self, double (*distance_metric)(void*,void*), enum OBSTACLE_TYPES* type) {
+  UNUSED(from);
+  UNUSED(to);
+  UNUSED(spheres);
+  UNUSED(polygons);
+  UNUSED(self);
+  UNUSED(distance_metric);
+  UNUSED(type);
+
+  PolygonalObstacle *p = polygon_get_first_blocking(from, to, polygons, self);
+  CircularObstacle *c = tangent_get_first_blocking(from, to, spheres, self, distance_metric);
+
+  if(p == NULL) return c;
+  if(c == NULL) return p;
+
+  double r = 1.0;
+  double r_min = r;
+  for(size_t idx = 0; idx < p->corners->num_items; idx++) {
+    MapPoint *v1 = darray_get(p->corners->data, idx);
+    MapPoint *v2 = darray_get(p->corners->data, (idx+1) % p->corners->num_items);
+    
+    _lines_intersect(from, to, v1, v2, &r, NULL);
+    r_min = (r < r_min) ? r : r_min;
+  }
+
+  printf("r = %g\n",r);
+  double dx = to->x - from->x;
+  double dy = to->y - from->y;
+
+  double _a = sq(dx) + sq(dy);
+  double _b = 2.0 * (from->x * dx - dx * c->position.x + from->y * dy - dy * c->position.y);
+  double _c = sq(from->x - c->position.x) + sq(from->y - c->position.y) - sq(c->radius);
+
+  double t1 = -_b / (2.0 * _a) + sqrt((sq(_b) - 4.0 * _c) / (4.0 * sq(_a)));
+  double t2 = -_b / (2.0 * _a) - sqrt((sq(_b) - 4.0 * _c) / (4.0 * sq(_a)));
+
+  double t_min = (t1 < t2) ? t1 : t2;
+  printf("t1 = %g\n",t1);
+  printf("t2 = %g\n",t2);
+  printf("t = %g\n",t_min);
+
+  if(t_min < r_min) {
+    *type = SPHERICAL_OBSTACLE;
+    return (void*) c;
+  } else {
+    *type = POLYGONAL_OBSTACLE;
+    return (void*) p;
+  }
+}

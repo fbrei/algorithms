@@ -82,6 +82,6 @@ double polygon_map_covered(DList *polygons, double width, double height);
  */
 unsigned short polygon_overlapping(PolygonalObstacle *p, PolygonalObstacle *o);
 
-unsigned short _lines_intersect(MapPoint *from_a, MapPoint *to_a, MapPoint *from_b, MapPoint *to_b);
+unsigned short _lines_intersect(MapPoint *from_a, MapPoint *to_a, MapPoint *from_b, MapPoint *to_b, double *r, double *s);
 
 #endif /* end of include guard: POLYGONS_H_MQ7DFOAE */
