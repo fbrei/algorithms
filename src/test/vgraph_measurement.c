@@ -13,9 +13,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#define RUN_FULL 1
-#define RUN_DYNAMIC 1
-
 #define min(x,y) ((x) < (y)) ? (x) : (y)
 
 // =========================================================
@@ -64,6 +61,51 @@ unsigned long hash(void *n) {
   b.in = m->y;
 
   return (a.out & 0xFFFF) | (b.out & 0xFFFF0000);
+}
+
+int dist_to_start(void* a, void *b) {
+
+  MapPoint *start = malloc(sizeof(MapPoint));
+  start->x = 50.0;
+  start->y = 50.0;
+
+  double d1 = euclid_distance(a, start);
+  double d2 = euclid_distance(b, start);
+
+  if(d1 == d2) return 0;
+
+  return (d1 < d2) ? -1 : 1;
+}
+
+int dist_to_goal(void* a, void *b) {
+
+  MapPoint *goal = malloc(sizeof(MapPoint));
+  goal->x = -50.0;
+  goal->y = -50.0;
+
+  double d1 = euclid_distance(a, goal);
+  double d2 = euclid_distance(b, goal);
+
+  if(d1 == d2) return 0;
+
+  return (d1 < d2) ? -1 : 1;
+}
+
+int astar_like(void* a, void *b) {
+
+  MapPoint *m = (MapPoint*) a;
+  MapPoint *n = (MapPoint*) b;
+
+  MapPoint *goal = malloc(sizeof(MapPoint));
+  goal->x = -50.0;
+  goal->y = -50.0;
+
+  double score_1 = m->shortest_length + euclid_distance(a, goal);
+  double score_2 = n->shortest_length + euclid_distance(b, goal);
+
+  if(score_1 == score_2) return 0;
+
+  return (score_1 < score_2) ? -1 : 1;
 }
 
 MapPoint* random_point() {
@@ -140,8 +182,9 @@ void random_polygons(DList *polygons, const size_t N_POLYGONS, const double x_di
     m->x = (((double) rand()) / RAND_MAX) * WIDTH + MIN_COORD;
 
     double dec = y_threshold / x_dim;
-    double y_dim = min(dec + y_threshold, -dec / y_threshold);
-    m->y = (((double) rand()) / RAND_MAX) * 2.0 * y_dim - y_dim + m->x;
+    /* double y_dim = min(dec + y_threshold, -dec / y_threshold); */
+    /* m->y = (((double) rand()) / RAND_MAX) * 2.0 * y_dim - y_dim + m->x; */
+    m->y = (((double) rand()) / RAND_MAX) * WIDTH + MIN_COORD;
     m->shortest_length = 9999999999.9l;
 
     dlist_push(base_points, m);
@@ -522,7 +565,7 @@ int main(int argc, char** argv) {
   Graph *g_dyn = NULL; 
 
   t1_dyn = clock();
-  g_dyn = vgraph(start,goal,polygons,spheres,euclid_distance,VGRAPH_DYNAMIC, VERBOSE);
+  g_dyn = vgraph(start,goal,polygons,spheres,euclid_distance,VGRAPH_DYNAMIC, VERBOSE, NULL);
   p_dyn = astar(g_dyn, start, goal, euclid_distance, hash);
   t2_dyn = clock();
 
@@ -536,7 +579,7 @@ int main(int argc, char** argv) {
   Graph *g_dyn_pr = NULL; 
 
   t1_dyn_pr = clock();
-  g_dyn_pr = vgraph(start,goal,polygons,spheres,euclid_distance,VGRAPH_DYNAMIC_LOCAL_PRUNING, VERBOSE);
+  g_dyn_pr = vgraph(start,goal,polygons,spheres,euclid_distance,VGRAPH_DYNAMIC_LOCAL_PRUNING, VERBOSE, astar_like);
   p_dyn_pr = astar(g_dyn_pr, start, goal, euclid_distance, hash);
   t2_dyn_pr = clock();
   

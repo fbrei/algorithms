@@ -754,7 +754,7 @@ void update_path_lengths(MapPoint *current, double new_length, double (*distance
   dlist_destroy(updated, NULL);
 }
 
-Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, double (*distance_metric)(void*, void*), const int dynamic, short VERBOSE) {
+Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, double (*distance_metric)(void*, void*), const int dynamic, short VERBOSE, int (*priority_func)(void*,void*)) {
 
   Graph *g = graph_init(GRAPH_DIRECTED);
   graph_add(g,start);
@@ -763,6 +763,8 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
   // The list of spherical obstacles is not used yet but will
   // be incorporated later
   UNUSED(spheres);
+
+  if(priority_func == NULL) priority_func = compare_to;
 
   if(dynamic == VGRAPH_DYNAMIC_LOCAL_PRUNING) {
 
@@ -783,7 +785,7 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
 
     // =========================================================
 
-    PrQueue *global = prqueue_init(compare_to);
+    PrQueue *global = prqueue_init(priority_func);
     global->equals = equals;
     prqueue_add(global,start);
 
@@ -1410,13 +1412,6 @@ MapPoint *vstar(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres
 }
 
 void* get_first_blocking(MapPoint *from, MapPoint *to, DList *spheres, DList *polygons, void *self, double (*distance_metric)(void*,void*), enum OBSTACLE_TYPES* type) {
-  UNUSED(from);
-  UNUSED(to);
-  UNUSED(spheres);
-  UNUSED(polygons);
-  UNUSED(self);
-  UNUSED(distance_metric);
-  UNUSED(type);
 
   PolygonalObstacle *p = polygon_get_first_blocking(from, to, polygons, self);
   CircularObstacle *c = tangent_get_first_blocking(from, to, spheres, self, distance_metric);

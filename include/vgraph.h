@@ -70,14 +70,17 @@ Graph* vgraph(MapPoint *start,
     DList *spheres,
     double (*distance_metric)(void*, void*),
     const int dynamic,
-    short verbose);
+    short verbose,
+    int (*priority_func)(void*,void*)
+    );
 
 MapPoint *vstar(MapPoint *start,
     MapPoint *goal, 
     DList *polygons,
     DList *spheres,
     double (*distance_metric)(void*, void*),
-    short verbose);
+    short verbose
+    );
 
 void* get_first_blocking(MapPoint *from, MapPoint *to, DList *spheres, DList *polygons, void *self, double (*distance_metric)(void*,void*), enum OBSTACLE_TYPES* type);
 #endif /* end of include guard: VGRAPH_H_AWDEVYPA */
