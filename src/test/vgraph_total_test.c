@@ -75,5 +75,5 @@ int main() {
   printf("Circle  : %p\n", (void*) c);
   printf("Blocking: %p\n", (void*) blocking);
 
-  printf("Path blocked by %s!\n", (blocking == o) ? "Polygon" : "Circle");
+  printf("Path blocked by %s!\n", (t == POLYGONAL_OBSTACLE) ? "Polygon" : "Circle");
 }

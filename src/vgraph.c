@@ -1442,8 +1442,8 @@ void* get_first_blocking(MapPoint *from, MapPoint *to, DList *spheres, DList *po
   double _b = 2.0 * (from->x * dx - dx * c->position.x + from->y * dy - dy * c->position.y);
   double _c = sq(from->x - c->position.x) + sq(from->y - c->position.y) - sq(c->radius);
 
-  double t1 = -_b / (2.0 * _a) + sqrt((sq(_b) - 4.0 * _c) / (4.0 * sq(_a)));
-  double t2 = -_b / (2.0 * _a) - sqrt((sq(_b) - 4.0 * _c) / (4.0 * sq(_a)));
+  double t1 = -_b / (2.0 * _a) + sqrt((sq(_b) - 4.0 * _c * _a) / (4.0 * sq(_a)));
+  double t2 = -_b / (2.0 * _a) - sqrt((sq(_b) - 4.0 * _c * _a) / (4.0 * sq(_a)));
 
   double t_min = (t1 < t2) ? t1 : t2;
   printf("t1 = %g\n",t1);
