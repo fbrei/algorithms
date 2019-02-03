@@ -13,6 +13,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+void print_graph_node(void* v) {
+
+  MapPoint *m = (MapPoint*) v;
+  printf("(%g,%g)", m->x, m->y);
+}
+
 double euclid_distance(void *n1, void *n2) {
 
   MapPoint *m1 = (MapPoint*) n1;
@@ -24,6 +30,21 @@ double euclid_distance(void *n1, void *n2) {
   return sqrt(dx*dx + dy*dy);
 }
 
+void dump_polygons(DList *polygons) {
+
+  for(size_t idx = 0; idx < polygons->num_items; idx++) {
+    printf("[\n");
+    PolygonalObstacle *p = darray_get(polygons->data,idx);
+    for(size_t corner_idx = 0; corner_idx < p->corners->num_items; corner_idx++) {
+      MapPoint *corner = darray_get(p->corners->data, corner_idx);
+      print_graph_node(corner);
+      printf(",\n");
+    }
+    print_graph_node(darray_get(p->corners->data,0));
+    printf("\n");
+    printf("],\n");
+  }
+}
 
 int main() {
 
@@ -68,12 +89,18 @@ int main() {
   DList *polygons = dlist_init();
   dlist_push(polygons, o);
 
-  enum OBSTACLE_TYPES t;
-  void *blocking = get_first_blocking(start, goal, spheres, polygons, NULL, euclid_distance, &t);
+  clock_t t_mn8oe4cu, t_v9mbndsz;
+  
+  t_mn8oe4cu = clock();
+  Graph *g = vgraph(start, goal, polygons, spheres, euclid_distance, VGRAPH_WITH_SPHERES, 0, NULL);
+  AStarPathNode *ap = astar(g, start, goal, euclid_distance, NULL);
+  t_v9mbndsz = clock();
+  
+  double total_time = ((double) (t_v9mbndsz - t_mn8oe4cu)) / CLOCKS_PER_SEC;
+  printf("Time taken: %gs\n", total_time);
 
-  printf("Polygon : %p\n", (void*) o);
-  printf("Circle  : %p\n", (void*) c);
-  printf("Blocking: %p\n", (void*) blocking);
+  printf("Path length: %g\n", ap->total_dist);
 
-  printf("Path blocked by %s!\n", (t == POLYGONAL_OBSTACLE) ? "Polygon" : "Circle");
+  graph_print(g, print_graph_node);
+
 }
