@@ -1,8 +1,12 @@
+#define SFMT_MEXP 19937
+#undef __STRICT_ANSI__
+
 #include "include/polygons.h"
 
 #include "include/vgraph.h"
 #include "include/astar.h"
 #include "lib/dtypes/include/dtype.h"
+#include "lib/sfmt/SFMT.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -16,6 +20,7 @@
 #define min(x,y) ((x) < (y)) ? (x) : (y)
 
 // =========================================================
+static sfmt_t state;
 
 void print_graph_node(void* v) {
 
@@ -179,25 +184,113 @@ void random_polygons(DList *polygons, const size_t N_POLYGONS, const double x_di
   for(size_t ii = 0; ii < N_POLYGONS; ii++) {
     DList *base_points = dlist_init();
     MapPoint *m = malloc(sizeof(MapPoint));
-    m->x = (((double) rand()) / RAND_MAX) * WIDTH + MIN_COORD;
+    m->x = sfmt_genrand_real1(&state) * WIDTH + MIN_COORD;
 
     double dec = y_threshold / x_dim;
     /* double y_dim = min(dec + y_threshold, -dec / y_threshold); */
     /* m->y = (((double) rand()) / RAND_MAX) * 2.0 * y_dim - y_dim + m->x; */
-    m->y = (((double) rand()) / RAND_MAX) * WIDTH + MIN_COORD;
+    m->y = sfmt_genrand_real1(&state) * WIDTH + MIN_COORD;
     m->shortest_length = 9999999999.9l;
 
     dlist_push(base_points, m);
     size_t n_corners = rand() % (MAX_CORNERS - MIN_CORNERS) + MIN_CORNERS;
     for(size_t jj = 0; jj < n_corners; jj++) {
       MapPoint *n = malloc(sizeof(MapPoint));
-      n->x = ((double) rand()) / RAND_MAX * 2 * SPREAD - SPREAD + m->x;
-      n->y = ((double) rand()) / RAND_MAX * 2 * SPREAD - SPREAD + m->y;
+      n->x = sfmt_genrand_real1(&state) * 2 * SPREAD - SPREAD + m->x;
+      n->y = sfmt_genrand_real1(&state) * 2 * SPREAD - SPREAD + m->y;
       dlist_push(base_points, n);
       n->shortest_length = 9999999999.9l;
     }
 
     dlist_push(polygons, convex_hull(base_points));
+  }
+
+}
+
+void random_spheres_to_polygons(DList *polygons, const size_t N_POLYGONS, const double x_dim, const double y_threshold, double expected_radius) { 
+
+  UNUSED(x_dim);
+  UNUSED(y_threshold);
+
+  unsigned int POINTS_SO_FAR = 0;
+
+  MapPoint **points = malloc(N_POLYGONS * sizeof(MapPoint*));
+
+  // Scatter random points that will be the centers of the circles
+  while(POINTS_SO_FAR < N_POLYGONS) {
+  
+      double u = sfmt_genrand_real1(&state);
+      double v = sfmt_genrand_real1(&state);
+
+      double local_radius = expected_radius + sqrt(-2.0 * log(u)) * cos(2.0 * M_PI * v);
+
+      double x = sfmt_genrand_real1(&state) * (100 - 2.0 * local_radius) - 50 + local_radius;
+      double y = sfmt_genrand_real1(&state) * (100 - 2.0 * local_radius) - 50 + local_radius;
+
+      MapPoint *candidate = malloc(sizeof(MapPoint));
+
+      candidate->x = x;
+      candidate->y = y;
+      candidate->radius = local_radius;
+
+      unsigned short keep = 1;
+      for(size_t idx = 0; idx < POINTS_SO_FAR && keep; idx++) {
+        if(euclid_distance(candidate, points[idx]) < (local_radius + points[idx]->radius)) {
+          keep = 0;
+          break;
+        }
+      }
+
+      if(keep) {
+        points[POINTS_SO_FAR] = candidate;
+        POINTS_SO_FAR++;
+      } else {
+        free(candidate);
+      }
+  }
+  // =================================================================================0
+
+
+  // Now that all is good, turn them into polygons
+  for(size_t idx = 0; idx < N_POLYGONS; idx++) {
+    // ................................................................
+    //
+    MapPoint *current = points[idx];
+    PolygonalObstacle *p = malloc(sizeof(PolygonalObstacle));
+    size_t n_corners = rand() % 5 + 4;
+
+    double *angles = malloc(n_corners * sizeof(double));
+
+    // Generate some random angles
+    for(size_t idx = 0; idx < n_corners; idx++) {
+      angles[idx] = 2.0 * M_PI * sfmt_genrand_real1(&state);
+    }
+    // Sort them by size using bubble sort
+    for(size_t ii = 0; ii < n_corners; ii++) {
+      for(size_t jj = 0; jj < n_corners - (ii+1); jj++) {
+        if(angles[jj] > angles[jj+1]) {
+          double tmp = angles[jj];
+          angles[jj] = angles[jj+1];
+          angles[jj+1] = tmp;
+        }
+      }
+    }
+
+    // Now generate the corners from these angles
+    DList *corners = dlist_init();
+     
+    for(size_t idx = 0; idx < n_corners; idx++) {
+      MapPoint *corner = malloc(sizeof(MapPoint));
+      corner->x = current->x + sin(angles[idx]) * current->radius;
+      corner->y = current->y + cos(angles[idx]) * current->radius;
+      dlist_push(corners, corner);
+    }
+
+    p->corners = corners;
+
+    dlist_push(polygons, p);
+
+    // ................................................................
   }
 
 }
@@ -432,8 +525,6 @@ int main(int argc, char** argv) {
   size_t N_POLYGONS = 20;
   short VERBOSE = 0;
   clock_t seed = time(0);
-  srand(seed);
-  seed = rand();
 
   // Use getopt to parse the arguments from the command line
   extern char* optarg;
@@ -497,7 +588,7 @@ int main(int argc, char** argv) {
 
   // Default
 
-  srand(seed);
+  sfmt_init_gen_rand(&state,seed);
 
   DList *spheres = dlist_init(), *polygons = dlist_init();
   UNUSED(spheres);
@@ -583,6 +674,7 @@ int main(int argc, char** argv) {
   p_dyn_pr = astar(g_dyn_pr, start, goal, euclid_distance, hash);
   t2_dyn_pr = clock();
   
+  double coverage = polygon_map_covered(polygons, 100, 100);
   if(VERBOSE) {
     printf("====================================\n");
     printf("Meta information:\n");
@@ -590,7 +682,7 @@ int main(int argc, char** argv) {
     printf("   Seed: %lu\n", seed);
     printf("   Time to generate map: %luus\n", map_time);
     printf("   Number of obstacles: %lu\n", polygons->num_items);
-    printf("   Percentage of map covered: %g\n", polygon_map_covered(polygons, 100, 100));
+    printf("   Percentage of map covered: %g\n", coverage);
     printf("====================================\n");
     printf("\n");
 
@@ -624,11 +716,11 @@ int main(int argc, char** argv) {
     printf("Path length: %g\n", 0.0);
     printf("Time; %luus\n", t2_vstar - t1_vstar);
   } else {
-    printf("%lu %lu %lu %lu %lu\n", polygons->num_items, seed, t2_full - t1_full, t2_dyn - t1_dyn, t2_dyn_pr - t1_dyn_pr);
+    printf("%lu %lu %g %lu %lu %lu\n", polygons->num_items, seed, coverage, t2_full - t1_full, t2_dyn - t1_dyn, t2_dyn_pr - t1_dyn_pr);
   }
 
-#define PRINTED_GRAPH g_dyn
-#define PRINTED_PATH p_dyn
+#define PRINTED_GRAPH g_full
+#define PRINTED_PATH p_full
   if(o_set) {
     freopen(outfile_name, "w", stdout);
     printf("Full path:\n");

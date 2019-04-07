@@ -22,6 +22,8 @@ typedef struct _MapPoint {
   double shortest_length; /**< The shortest path length to this point so far */
   struct _MapPoint *shortest_ancestor; /**< The shortest ancestor */
   DList *reachable; /**< List of reachable locations, */
+  unsigned short on_circle; /**< Specifies if this map point is sitting on a circle (1) or not (0) */
+  double radius; /**< Needed for the random circles to polygons method */
 } MapPoint;
 
 inline double sq(double x) { return x * x; }

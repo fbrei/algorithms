@@ -80,5 +80,6 @@ measurement:
 	$(CC) -c $(PERFFLAGS) src/vgraph.c -o obj/vgraph.o $(CFLAGS)
 	$(CC) -c $(PERFFLAGS) src/polygons.c -o obj/polygons.o $(CFLAGS)
 	$(CC) -c $(PERFFLAGS) src/test/vgraph_measurement.c -o obj/vgraph_measurement.o $(CFLAGS)
+	$(CC) -c $(PERFFLAGS) lib/sfmt/SFMT.c -o obj/sfmt.o
 	$(LD) obj/*.o -o bin/vgraph_measurement -lm
 	rm -rf obj

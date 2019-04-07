@@ -28,6 +28,7 @@ typedef struct _CircularObstacle {
 
   size_t _num_map_points;
   DArray *_map_points;
+  HSet *points;
 } CircularObstacle;
 
 

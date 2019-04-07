@@ -85,3 +85,4 @@ MapPoint *vstar(MapPoint *start,
 
 void* get_first_blocking(MapPoint *from, MapPoint *to, DList *spheres, DList *polygons, void *self, double (*distance_metric)(void*,void*), enum OBSTACLE_TYPES* type);
 #endif /* end of include guard: VGRAPH_H_AWDEVYPA */
+unsigned short is_blocked(MapPoint *from, MapPoint *to, DList *spheres, DList *polygons);

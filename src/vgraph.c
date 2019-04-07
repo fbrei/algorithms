@@ -2,10 +2,34 @@
 #include "include/globals.h"
 #include <stdio.h>
 #include <math.h>
+/* *********************************
+                 / )
+                / /    _
+      _        / /    / )
+     ( `.     / /-.  / /
+      `\ \   / // /`/ /
+        ; `-`  (_/ / /
+        |       (_/ /
+        \          /
+         )       /`
+        /      /`
+********************************** */
 
 #ifndef PRINTDEBUG
 #define PRINTDEBUG 0
 #endif
+
+#define PATH_MAX 9999999999.9l
+
+/**
+ * \brief Brief description
+ *
+ * Long description
+ */
+typedef struct _PrQueueObstacle {
+  enum OBSTACLE_TYPES type; 		/**< description */
+  void *data; 		/**< description */
+} PrQueueObstacle;
 
 int compare_to(void* a,void* b) {
   UNUSED(a);
@@ -754,6 +778,31 @@ void update_path_lengths(MapPoint *current, double new_length, double (*distance
   dlist_destroy(updated, NULL);
 }
 
+unsigned int equals_with_spheres(void *a, void *b) {
+
+  PrQueueObstacle *m = (PrQueueObstacle*) a;
+  PrQueueObstacle *n = (PrQueueObstacle*) b;
+
+  return (m->data == n->data) ? 1  : 0;
+}
+
+unsigned long hash_with_spheres(void *a) {
+
+  PrQueueObstacle *m = (PrQueueObstacle*) a;
+
+  return obstacle_hash(m->data);
+}
+
+void init_map_point(MapPoint *m) {
+  m->origins = dlist_init();
+  m->local_queue = prqueue_init(compare_to);
+  m->local_queue->equals = equals;
+  m->reachable = dlist_init();
+  m->visited_points = dlist_init();
+  m->shortest_length = PATH_MAX;
+
+}
+
 Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, double (*distance_metric)(void*, void*), const int dynamic, short VERBOSE, int (*priority_func)(void*,void*)) {
 
   Graph *g = graph_init(GRAPH_DIRECTED);
@@ -1205,15 +1254,10 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
 
     for(size_t ii = 0; ii < g->node_list->num_items; ii++) {
       MapPoint *m = darray_get(g->node_list, ii);
-      m->origins = dlist_init();
-      m->local_queue = prqueue_init(compare_to);
-      m->local_queue->equals = equals;
-      m->reachable = dlist_init();
-      m->visited_points = dlist_init();
+      init_map_point(m);
       if(m != goal) {
         prqueue_add(m->local_queue, goal);
       }
-      m->shortest_length = 9999999999.9l;
     }
 
     // =========================================================
@@ -1230,15 +1274,17 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
     // Get the next item on the todo list
     while((from = prqueue_pop(global)) != NULL) {
 
-      /* _print_status_map(start, goal, polygons); */
-
       if(VERBOSE >= 2) {
         fprintf(stderr, "Checking (%g,%g) -> %lu nodes to inspect | Obstacle %p | Shortest length: %g\n", from->x, from->y, from->local_queue->num_items, from->obstacle, from->shortest_length);
       }
 
       if(from == goal || from->local_queue->num_items == 0) continue;
 
-      if(from->obstacle != NULL && from->local_queue->num_items  > 0) {
+      // This block updates the connections to the neighbors of the current map point
+      // in case it sits on a polygon because by definition points that are connected
+      // by an edge of a polygon can reach each other (although mathematically speaking
+      // they are actually blocked but this would cause a lot of headache otherwise)
+      if(from->obstacle != NULL && from->on_circle == 0) {
         PolygonalObstacle *p = from->obstacle;
         long tmp_idx = darray_find(p->corners->data, from);
         size_t idx = (tmp_idx > 0) ? tmp_idx : 0;
@@ -1292,10 +1338,20 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
           }
         }
       }
+      // End of polygon edge neighbor update stuff
+      // =============================================================================
+      // Let the real magic happen below this point, this here is just bookkeeping
+      //
+      // =============================================================================
+
+
+      // Global variable for reuse
+      enum OBSTACLE_TYPES o_type;
 
       // The point may have some points listed that it should try to reach.
       while((to = prqueue_pop(from->local_queue)) != NULL) {
 
+        // If they are sitting on the same obstacle, we will skip this calculation because this was handled above
         if(from->obstacle && from->obstacle == to->obstacle) continue;
 
         if(VERBOSE >= 2) {
@@ -1304,7 +1360,7 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
 
         // As always, try to make a direct connection first
 
-        if(!polygon_is_blocked(from, to, polygons)) {
+        if(!is_blocked(from, to, spheres, polygons)) {
           double d = distance_metric(from,to);
           if(VERBOSE >= 2) {
             fprintf(stderr, "        Connection is possible!\n");
@@ -1352,96 +1408,150 @@ Graph* vgraph(MapPoint *start, MapPoint *goal, DList *polygons, DList *spheres, 
 
         } else {
 
-          PolygonalObstacle *p = polygon_get_first_blocking(from, to, polygons, from->obstacle);
+          void *fb = get_first_blocking(from, to, spheres, polygons, from->obstacle, distance_metric, &o_type);
 
           if(VERBOSE >= 2) {
-            if(p) {
-              fprintf(stderr, "        Blocked by %p \n", (void*) p);
-              double p_x = ((MapPoint*) darray_get(p->corners->data, 0))->x;
-              double p_y = ((MapPoint*) darray_get(p->corners->data, 0))->y;
-              fprintf(stderr, "              (%g,%g)\n", p_x, p_y);
+            if(fb) {
+              fprintf(stderr, "        Blocked by %p \n", (void*) fb);
             }
           }
+
+          if(fb == from->obstacle || !fb) continue;
 
           // Do the whole expansion process as above in the other method, starting from the
           // current point
           PrQueue *local = prqueue_init(compare_to);
-          HSet *local_explored = hset_init(obstacle_hash, equals);
-          local->equals = equals;
-          prqueue_add(local, p);
-          while((p = prqueue_pop(local)) != NULL) {
+          HSet *local_explored = hset_init(hash_with_spheres, equals_with_spheres);
+          local->equals = equals_with_spheres;
 
-            if(hset_contains(local_explored, p) != -1) {
+          PrQueueObstacle *po = malloc(sizeof(PrQueueObstacle));
+          po->data = fb;
+          po->type = o_type;
+          prqueue_add(local, po);
+
+          while((po = prqueue_pop(local)) != NULL) {
+
+            fprintf(stderr, "   -> Checking %p->%p\n", (void*) po, (void*) po->data);
+            if(hset_contains(local_explored, po->data) != -1) {
               continue;
             } else {
-              hset_add(local_explored, p);
+              hset_add(local_explored, po->data);
             }
 
-            if(VERBOSE >= 2) {
-              double p_x = ((MapPoint*) darray_get(p->corners->data, 0))->x;
-              double p_y = ((MapPoint*) darray_get(p->corners->data, 0))->y;
-              fprintf(stderr, "       Current obstacle: (%g,%g)\n", p_x, p_y);
+            if(po->data == from->obstacle) continue;
+
+            DList *targets;
+
+            if(po->type == POLYGONAL_OBSTACLE) {
+
+              targets = ((PolygonalObstacle*) po->data)->corners;
+
+            } else {
+              
+              targets = tangent_circle_point_intersects(from, ((CircularObstacle*) po->data));
+              for(size_t idx = 0; idx < targets->num_items; idx++) {
+                MapPoint *m = (MapPoint*) darray_get(targets->data, idx);
+                init_map_point(m);
+                m->obstacle = fb;
+                m->on_circle = 1;
+                prqueue_add(m->local_queue, goal);
+              }
+
             }
 
-      
-            if(p == from->obstacle) continue;
+            fprintf(stderr, "     Targets initialized\n");
+            
+            PolygonalObstacle *p = (PolygonalObstacle*) po->data;
+            for(size_t ii = 0; ii < targets->num_items; ii++) {
 
-            for(size_t ii = 0; ii < p->corners->num_items; ii++) {
-
-              MapPoint *corner = darray_get(p->corners->data, ii);
+              MapPoint *corner = darray_get(targets->data, ii);
 
               if(VERBOSE >= 2) {
                 fprintf(stderr, "      Trying to reach (%g,%g)\n", corner->x, corner->y);
               }
 
-              if(!polygon_is_blocked(from, corner, polygons)) {
+              if(!is_blocked(from, corner, spheres, polygons)) {
 
-                // Update forward
-                if(graph_get_edge_weight(g, from, corner)) continue;
-                if(darray_find(from->reachable->data, corner) == -1) {
-                  dlist_push(from->reachable, corner);
-                } 
+                if(po->type == POLYGONAL_OBSTACLE) {
+                  // Update forward
+                  if(graph_get_edge_weight(g, from, corner)) continue;
+                  if(darray_find(from->reachable->data, corner) == -1) {
+                    dlist_push(from->reachable, corner);
+                  } 
 
-                if(VERBOSE >= 2) {
-                  fprintf(stderr, "        Connecting to (%g,%g)!\n", corner->x, corner->y);
-                }
-      
-                double d = distance_metric(from,corner);
-                if(VERBOSE == 2) {
-                  fprintf(stderr, "             Shortest so far: %g | Candidate: %g\n", corner->shortest_length, from->shortest_length + d);
-                }
-                if(from->shortest_length + d < corner->shortest_length && from->shortest_length + d < shortest_to_goal) {
-                  /* update_path_lengths(corner, from->shortest_length + d, distance_metric); */
-                  corner->shortest_length = from->shortest_length + d;
-                  for(size_t idx = 0; idx < corner->reachable->num_items; idx++) {
-                    MapPoint *m = darray_get(corner->reachable->data, idx);
-                    if(!prqueue_contains(corner->local_queue, m)) {
-                      prqueue_add(corner->local_queue, m);
+                  if(VERBOSE >= 2) {
+                    fprintf(stderr, "        Connecting to (%g,%g)!\n", corner->x, corner->y);
+                  }
+        
+                  double d = distance_metric(from,corner);
+                  if(VERBOSE == 2) {
+                    fprintf(stderr, "             Shortest so far: %g | Candidate: %g\n", corner->shortest_length, from->shortest_length + d);
+                  }
+                  if(from->shortest_length + d < corner->shortest_length && from->shortest_length + d < shortest_to_goal) {
+                    /* update_path_lengths(corner, from->shortest_length + d, distance_metric); */
+                    corner->shortest_length = from->shortest_length + d;
+                    for(size_t idx = 0; idx < corner->reachable->num_items; idx++) {
+                      MapPoint *m = darray_get(corner->reachable->data, idx);
+                      if(!prqueue_contains(corner->local_queue, m)) {
+                        prqueue_add(corner->local_queue, m);
+                      }
+                    }
+                    graph_connect(g, from, corner, distance_metric(from,corner));
+
+                    prqueue_add(global, corner);
+                    add_source_point(corner, from, global);
+                    dlist_push(corner->origins, from);
+
+                    // Update backward
+                    for(size_t jj = 0; jj < from->origins->num_items; jj++) {
+                      MapPoint *origin = darray_get(from->origins->data, jj);
+                      if(VERBOSE >= 2) {
+                        fprintf(stderr, "        Updating origin point: (%g,%g)\n", origin->x, origin->y);
+                      }
+                      update_queues(origin, corner, global);
+                      prqueue_add(global, origin);
                     }
                   }
-                  graph_connect(g, from, corner, distance_metric(from,corner));
+                } else if(po->type == SPHERICAL_OBSTACLE) {
+                  CircularObstacle *co = (CircularObstacle*) po->data;
+                  if(hset_contains(co->points, corner) == -1) {
+                    graph_add(g, corner);
+                    graph_connect(g, from, corner, distance_metric(from,corner));
+                    hset_add(co->points, corner);
+                    DList *new_points = tangent_circle_point_intersects(to, co);
+                    for(size_t idx = 0; idx < new_points->num_items; idx++) {
+                      MapPoint *m = darray_get(new_points->data, idx);
+                      if(hset_contains(co->points, m) == -1) {
+                        fprintf(stderr, "        Connecting to (%g,%g)!\n", m->x, m->y);
+                        init_map_point(m);
+                        m->obstacle = corner->obstacle;
+                        m->shortest_length = from->shortest_length + distance_metric(from,m);
+                        m->on_circle = 1;
 
-                  prqueue_add(global, corner);
-                  add_source_point(corner, from, global);
-                  dlist_push(corner->origins, from);
+                        graph_add(g, m);
+                        graph_connect(g, corner, m, distance_metric(corner,m));
 
-                  // Update backward
-                  for(size_t jj = 0; jj < from->origins->num_items; jj++) {
-                    MapPoint *origin = darray_get(from->origins->data, jj);
-                    if(VERBOSE >= 2) {
-                      fprintf(stderr, "        Updating origin point: (%g,%g)\n", origin->x, origin->y);
+                        fprintf(stderr, "      Adding (%g,%g) to gloabl Q\n", m->x, m->y);
+                        prqueue_add(global, m);
+                        prqueue_add(m->local_queue, goal);
+                        hset_add(co->points, m);
+                      }
                     }
-                    update_queues(origin, corner, global);
-                    prqueue_add(global, origin);
+                  } else {
+                    fprintf(stderr, "      Already checked\n");
                   }
                 }
               } else {
-                PolygonalObstacle *block = polygon_get_first_blocking(from, corner, polygons, from->obstacle);
-                if(block != p && block != from->obstacle && !prqueue_contains(local, block)) {
-                  prqueue_add(local, block);
+                void *new_blocking = get_first_blocking(from, corner, spheres, polygons, NULL, distance_metric, &o_type);
+                PrQueueObstacle *new_po = malloc(sizeof(PrQueueObstacle));
+                new_po->data = new_blocking;
+                if(new_blocking != p && new_blocking != from->obstacle && !prqueue_contains(local, new_po)) {
+                  po->type = o_type;
+                  prqueue_add(local, new_po);
                 }
               }
             }
+
           }
         }
       }
@@ -1665,8 +1775,15 @@ void* get_first_blocking(MapPoint *from, MapPoint *to, DList *spheres, DList *po
   PolygonalObstacle *p = polygon_get_first_blocking(from, to, polygons, self);
   CircularObstacle *c = tangent_get_first_blocking(from, to, spheres, self, distance_metric);
 
-  if(p == NULL) return c;
-  if(c == NULL) return p;
+  if(p == NULL) {
+    *type = SPHERICAL_OBSTACLE;
+    return c;
+  }
+
+  if(c == NULL) {
+    *type = POLYGONAL_OBSTACLE;
+    return p;
+  }
 
   double r = 1.0;
   double r_min = r;
@@ -1678,7 +1795,6 @@ void* get_first_blocking(MapPoint *from, MapPoint *to, DList *spheres, DList *po
     r_min = (r < r_min) ? r : r_min;
   }
 
-  printf("r = %g\n",r);
   double dx = to->x - from->x;
   double dy = to->y - from->y;
 
@@ -1690,9 +1806,6 @@ void* get_first_blocking(MapPoint *from, MapPoint *to, DList *spheres, DList *po
   double t2 = -_b / (2.0 * _a) - sqrt((sq(_b) - 4.0 * _c * _a) / (4.0 * sq(_a)));
 
   double t_min = (t1 < t2) ? t1 : t2;
-  printf("t1 = %g\n",t1);
-  printf("t2 = %g\n",t2);
-  printf("t = %g\n",t_min);
 
   if(t_min < r_min) {
     *type = SPHERICAL_OBSTACLE;
@@ -1701,4 +1814,10 @@ void* get_first_blocking(MapPoint *from, MapPoint *to, DList *spheres, DList *po
     *type = POLYGONAL_OBSTACLE;
     return (void*) p;
   }
+}
+
+unsigned short is_blocked(MapPoint *from, MapPoint *to, DList *spheres, DList *polygons) {
+
+  return polygon_is_blocked(from, to, polygons) + tangent_is_blocked(from, to, spheres);
+
 }
