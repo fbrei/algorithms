@@ -20,6 +20,9 @@
 #define min(x,y) ((x) < (y)) ? (x) : (y)
 
 // =========================================================
+
+const unsigned int MAX_RUNS_FOR_CIRCLE_METHOD = 10000;
+
 static sfmt_t state;
 
 void print_graph_node(void* v) {
@@ -217,6 +220,7 @@ void random_spheres_to_polygons(DList *polygons, const size_t N_POLYGONS, const 
   MapPoint **points = malloc(N_POLYGONS * sizeof(MapPoint*));
 
   // Scatter random points that will be the centers of the circles
+  unsigned int runs = 0;
   while(POINTS_SO_FAR < N_POLYGONS) {
   
       double u = sfmt_genrand_real1(&state);
@@ -244,8 +248,14 @@ void random_spheres_to_polygons(DList *polygons, const size_t N_POLYGONS, const 
       if(keep) {
         points[POINTS_SO_FAR] = candidate;
         POINTS_SO_FAR++;
+        runs = 0;
       } else {
+        runs++;
         free(candidate);
+      }
+
+      if(runs > MAX_RUNS_FOR_CIRCLE_METHOD) {
+        exit(-1);
       }
   }
   // =================================================================================0
@@ -495,6 +505,7 @@ void print_help() {
   printf("    -d : Dump the polygons in a json like array (can be read by python for example).\n");
   printf("    -y : Random polygons are created equally distributed across the whole space if this parameter is omitted.\n");
   printf("         If it is set, than the base points for polygon generation are within this distance to the diagonal line.\n");
+  printf("    -c : Set the desired coverage. If this flag is given, another random obstacle method will be used\n");
 }
 
 void _reset_point(MapPoint *m) {
@@ -529,14 +540,16 @@ int main(int argc, char** argv) {
   // Use getopt to parse the arguments from the command line
   extern char* optarg;
   extern int optind;
-  short n_set = 0, h_set = 0, o_set = 0, d_set = 0;
+  short n_set = 0, h_set = 0, o_set = 0, d_set = 0, c_set = 0;
   char* outfile_name = NULL;
   short rc = 0, err = 0;
 
   double x_max = 45.0;
   double y_max = x_max;
+  double circle_radius = 0.0;
+  double target_coverage = 0.0;
 
-  while((rc = getopt(argc, argv, "dvhn:s:o:y:")) != -1) {
+  while((rc = getopt(argc, argv, "dvhn:s:o:y:c:")) != -1) {
     switch(rc) {
       case 'v':
         VERBOSE++;
@@ -566,6 +579,12 @@ int main(int argc, char** argv) {
         memcpy(outfile_name, optarg, slen);
         outfile_name[slen] = 0x0;
         break;
+      case 'c':
+        c_set = 1;
+        char *end = NULL;
+        target_coverage = strtod(optarg, &end);
+        if(end == optarg || target_coverage <= 0.0 || target_coverage >= 1.0) err = 1;
+        break;
       default:
         err = 1;
     }
@@ -579,6 +598,7 @@ int main(int argc, char** argv) {
   if(n_set == 0) {
     N_POLYGONS = 20;
   }
+  circle_radius = sqrt((target_coverage * 100 * 100) / (N_POLYGONS * M_PI));
 
   // Example I chose for the comparison plot
   /* clock_t seed = 1546981252; */
@@ -606,13 +626,19 @@ int main(int argc, char** argv) {
   goal->shortest_length = 9999999999.9l;
 
   clock_t t_aou6ff0n, t_khlrengx;
+  clock_t map_time;
+  if(c_set) {
+    t_aou6ff0n = clock();
+    random_spheres_to_polygons(polygons, N_POLYGONS, x_max, y_max, circle_radius);
+    t_khlrengx = clock();
+  } else {
+    t_aou6ff0n = clock();
+    random_polygons(polygons, N_POLYGONS, x_max, y_max);
+    polygons = merge_polygons(polygons);
+    t_khlrengx = clock();
+  }
   
-  t_aou6ff0n = clock();
-  random_polygons(polygons, N_POLYGONS, x_max, y_max);
-  polygons = merge_polygons(polygons);
-  t_khlrengx = clock();
-  
-  clock_t map_time = t_khlrengx - t_aou6ff0n;
+  map_time = t_khlrengx - t_aou6ff0n;
 
   /* evil_test_set(polygons); */
 
@@ -624,29 +650,6 @@ int main(int argc, char** argv) {
   g_full = vgraph_polygonal_obstacles(start,goal,polygons,euclid_distance,0);
   p_full = astar(g_full, start, goal, euclid_distance, hash);
   t2_full = clock();
-
-  /* fprintf(stderr, "\n"); */
-
-  /* t1_dyn = clock(); */
-  /* g_dyn = vgraph_polygonal_obstacles(start,goal,polygons,euclid_distance,2); */
-  /* p_dyn = astar(g_dyn, start, goal, euclid_distance, hash); */
-  /* t2_dyn = clock(); */
-
-  /* fprintf(stderr, "Path length: %g\n", p->total_dist); */
-  /* fprintf(stderr, "Time; %luus\n", t2-t1); */
-
-
-  /* if(p_full->total_dist == p_dyn->total_dist) { */
-  /*   printf("%lu %lu %lu\n", polygons->num_items, t2_full - t1_full, t2_dyn - t1_dyn); */
-  /* } else { */
-  /*   [> fprintf(stderr, "%g %g\n", p_full->total_dist, p_dyn->total_dist); <] */
-  /*   printf("FAIL\n"); */
-  /* } */
-
-  /* fprintf(stderr, "Dynamic method 2.0: %lu\n", t2_dyn - t1_dyn); */
-
-  /* dlist_destroy(polygons,NULL); */
-  /* polygons = dlist_init(); */
 
   if(d_set) dump_polygons(polygons);
 
