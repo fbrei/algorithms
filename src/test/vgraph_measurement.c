@@ -659,8 +659,8 @@ int main(int argc, char** argv) {
   Graph *g_dyn = NULL; 
 
   t1_dyn = clock();
-  g_dyn = vgraph(start,goal,polygons,spheres,euclid_distance,VGRAPH_DYNAMIC, VERBOSE, NULL);
-  p_dyn = astar(g_dyn, start, goal, euclid_distance, hash);
+  /* g_dyn = vgraph(start,goal,polygons,spheres,euclid_distance,VGRAPH_DYNAMIC, VERBOSE, NULL); */
+  /* p_dyn = astar(g_dyn, start, goal, euclid_distance, hash); */
   t2_dyn = clock();
 
   clock_t t1_vstar, t2_vstar;
@@ -673,9 +673,27 @@ int main(int argc, char** argv) {
   Graph *g_dyn_pr = NULL; 
 
   t1_dyn_pr = clock();
-  g_dyn_pr = vgraph(start,goal,polygons,spheres,euclid_distance,VGRAPH_DYNAMIC_LOCAL_PRUNING, VERBOSE, astar_like);
+  g_dyn_pr = vgraph(start,goal,polygons,spheres,euclid_distance,VGRAPH_DYNAMIC_LOCAL_PRUNING, VERBOSE, NULL);
   p_dyn_pr = astar(g_dyn_pr, start, goal, euclid_distance, hash);
   t2_dyn_pr = clock();
+
+  clock_t t1_dyn_pr_start, t2_dyn_pr_start;
+  t1_dyn_pr_start = clock();
+  g_dyn_pr = vgraph(start,goal,polygons,spheres,euclid_distance,VGRAPH_DYNAMIC_LOCAL_PRUNING, VERBOSE, dist_to_start);
+  p_dyn_pr = astar(g_dyn_pr, start, goal, euclid_distance, hash);
+  t2_dyn_pr_start = clock();
+
+  clock_t t1_dyn_pr_goal, t2_dyn_pr_goal;
+  t1_dyn_pr_goal = clock();
+  g_dyn_pr = vgraph(start,goal,polygons,spheres,euclid_distance,VGRAPH_DYNAMIC_LOCAL_PRUNING, VERBOSE, dist_to_goal);
+  p_dyn_pr = astar(g_dyn_pr, start, goal, euclid_distance, hash);
+  t2_dyn_pr_goal = clock();
+
+  clock_t t1_dyn_pr_astar, t2_dyn_pr_astar;
+  t1_dyn_pr_astar = clock();
+  g_dyn_pr = vgraph(start,goal,polygons,spheres,euclid_distance,VGRAPH_DYNAMIC_LOCAL_PRUNING, VERBOSE, astar_like);
+  p_dyn_pr = astar(g_dyn_pr, start, goal, euclid_distance, hash);
+  t2_dyn_pr_astar = clock();
   
   double coverage = polygon_map_covered(polygons, 100, 100);
   if(VERBOSE) {
@@ -719,7 +737,10 @@ int main(int argc, char** argv) {
     printf("Path length: %g\n", 0.0);
     printf("Time; %luus\n", t2_vstar - t1_vstar);
   } else {
-    printf("%lu %lu %g %lu %lu %lu\n", polygons->num_items, seed, coverage, t2_full - t1_full, t2_dyn - t1_dyn, t2_dyn_pr - t1_dyn_pr);
+    /* printf("%lu %lu %g %lu %lu %lu\n", polygons->num_items, seed, coverage, t2_full - t1_full, t2_dyn - t1_dyn, t2_dyn_pr - t1_dyn_pr); */
+
+    // Output for PrQ comparisons
+    printf("%lu %lu %g %lu %lu %lu %lu %lu\n", polygons->num_items, seed, coverage, t2_full - t1_full, t2_dyn_pr - t1_dyn_pr, t2_dyn_pr_start - t1_dyn_pr_start, t2_dyn_pr_goal - t1_dyn_pr_goal, t2_dyn_pr_astar - t1_dyn_pr_astar);
   }
 
 #define PRINTED_GRAPH g_full

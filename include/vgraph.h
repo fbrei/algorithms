@@ -17,6 +17,7 @@
 #define VGRAPH_H_AWDEVYPA
 
 #include "lib/dtypes/include/graph.h"
+#include "lib/dtypes/include/queue.h"
 #include "include/tangents.h"
 #include "include/polygons.h"
 

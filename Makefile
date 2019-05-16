@@ -71,6 +71,7 @@ line_sections_test:
 measurement:
 	mkdir -p obj
 	$(CC) -c $(PERFFLAGS) lib/dtypes/src/darray.c -o obj/darray.o  $(CFLAGS)
+	$(CC) -c $(PERFFLAGS) lib/dtypes/src/queue.c -o obj/queue.o  $(CFLAGS)
 	$(CC) -c $(PERFFLAGS) lib/dtypes/src/dlist.c -o obj/dlist.o  $(CFLAGS)
 	$(CC) -c $(PERFFLAGS) lib/dtypes/src/hset.c -o obj/hset.o  $(CFLAGS)
 	$(CC) -c $(PERFFLAGS) lib/dtypes/src/prqueue.c -o obj/prqueue.o  $(CFLAGS)
